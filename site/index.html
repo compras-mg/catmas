@@ -108,15 +108,6 @@
         <div id="classe-facets" class="facet-list"></div>
       </div>
 
-      <div class="filter-group">
-        <label for="codigo">C&oacute;digo</label>
-        <input type="text" id="codigo" placeholder="Buscar c&oacute;digo...">
-      </div>
-
-      <div class="filter-group">
-        <label for="nome">Nome</label>
-        <input type="text" id="nome" placeholder="Buscar nome...">
-      </div>
 
     </aside>
 
@@ -181,8 +172,6 @@
 
   // DOM refs
   const tipoChecks   = document.querySelectorAll('input[name="tipo"]');
-  const codigoIn     = document.getElementById("codigo");
-  const nomeIn       = document.getElementById("nome");
   const specIn       = document.getElementById("spec");
   const grupoFacets  = document.getElementById("grupo-facets");
   const classeFacets = document.getElementById("classe-facets");
@@ -217,8 +206,6 @@
       tipos:   getSelectedTipos(),
       grupos:  tsGrupo.getValue(),
       classes: tsClasse.getValue(),
-      codigo:  codigoIn.value.trim(),
-      nome:    nomeIn.value.trim(),
       spec:    specIn.value.trim(),
     };
   }
@@ -253,8 +240,6 @@
       clauses.push(inClause("grupo", f.grupos, "g", params));
     if (exclude !== "classe" && f.classes.length)
       clauses.push(inClause("classe", f.classes, "c", params));
-    if (f.codigo) { clauses.push("codigo LIKE :codigo"); params[":codigo"] = `%${f.codigo}%`; }
-    if (f.nome)   { clauses.push("nome LIKE :nome");     params[":nome"]   = `%${f.nome}%`; }
     if (f.spec)   { clauses.push("spec LIKE :spec");     params[":spec"]   = `%${f.spec}%`; }
 
     return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
@@ -439,8 +424,6 @@
 
   // Event listeners
   tipoChecks.forEach(c => c.addEventListener("change", refresh));
-  codigoIn.addEventListener("input", debouncedRefresh);
-  nomeIn.addEventListener("input", debouncedRefresh);
   specIn.addEventListener("input", debouncedRefresh);
 
   prevBtn.addEventListener("click", () => { page--; query(); });
