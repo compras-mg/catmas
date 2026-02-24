@@ -1,0 +1,8 @@
+[project]
+name = "catmas-busca"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "sqlite-utils>=3.39",
+]
