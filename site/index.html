@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATMAS Busca</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
+  #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
+  #app { display: none; }
+
+  header { background: #1a5276; color: #fff; padding: 1rem 1.5rem; }
+  header h1 { font-size: 1.4rem; font-weight: 600; }
+
+  .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
+
+  .sidebar {
+    width: 320px; min-width: 320px; background: #fff;
+    border-right: 1px solid #ddd; padding: 1.25rem;
+    overflow-y: auto;
+  }
+  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; letter-spacing: 0.05em; }
+  .filter-group { margin-bottom: 1.25rem; }
+  .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .filter-group select,
+  .filter-group input[type="text"] {
+    width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.9rem; background: #fff;
+  }
+  .filter-group .ts-wrapper { font-size: 0.9rem; }
+  .filter-group .ts-control { border-radius: 4px; }
+  .checkbox-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .checkbox-group label { font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; }
+
+  .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .pagination .info { font-size: 0.9rem; color: #555; }
+  .pagination button {
+    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; cursor: pointer; font-size: 0.9rem;
+  }
+  .pagination button:disabled { opacity: 0.4; cursor: default; }
+  .pagination button:not(:disabled):hover { background: #e8e8e8; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th { background: #f0f0f0; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; white-space: nowrap; }
+  td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+  tr:hover td { background: #fafafa; }
+  td.nome { max-width: 500px; word-break: break-word; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<div id="loading">Carregando banco de dados...</div>
+<div id="app">
+  <header><h1>CATMAS Busca</h1></header>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Filtros</h2>
+
+      <div class="filter-group">
+        <label>Tipo</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="tipo" value="MATERIAL" checked> Material</label>
+          <label><input type="checkbox" name="tipo" value="SERVICO" checked> Servi&ccedil;o</label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="grupo">Grupo</label>
+        <select id="grupo" multiple placeholder="Todos"></select>
+      </div>
+
+      <div class="filter-group">
+        <label for="classe">Classe</label>
+        <select id="classe" multiple placeholder="Todos"></select>
+      </div>
+
+      <div class="filter-group">
+        <label for="codigo">C&oacute;digo</label>
+        <input type="text" id="codigo" placeholder="Buscar c&oacute;digo...">
+      </div>
+
+      <div class="filter-group">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" placeholder="Buscar nome...">
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="pagination">
+        <span class="info" id="info"></span>
+        <div>
+          <button id="prev" disabled>&laquo; Anterior</button>
+          <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>C&oacute;digo</th>
+            <th>Tipo</th>
+            <th>Grupo</th>
+            <th>Classe</th>
+            <th>Nome</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+(async () => {
+  const PAGE_SIZE = 50;
+  let db, hierarchy, page = 0;
+
+  // Load sql.js and the database
+  const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/${f}` });
+  const resp = await fetch("data.db");
+  const buf = await resp.arrayBuffer();
+  db = new SQL.Database(new Uint8Array(buf));
+
+  // Pre-load hierarchy for cascading dropdowns
+  hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;
+
+  // Build lookup maps: short code -> full label
+  const grupoLabels = new Map();
+  const classeLabels = new Map();
+  for (const [, g, c] of hierarchy) {
+    const gCode = g.split(" - ")[0].trim();
+    const cCode = c.split(" - ")[0].trim();
+    if (!grupoLabels.has(gCode)) grupoLabels.set(gCode, g);
+    if (!classeLabels.has(cCode)) classeLabels.set(cCode, c);
+  }
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  // DOM refs
+  const tipoChecks = document.querySelectorAll('input[name="tipo"]');
+  const codigoIn   = document.getElementById("codigo");
+  const nomeIn     = document.getElementById("nome");
+  const tbody      = document.getElementById("tbody");
+  const infoEl     = document.getElementById("info");
+  const prevBtn    = document.getElementById("prev");
+  const nextBtn    = document.getElementById("next");
+
+  // Initialize Tom Select on grupo and classe (multi-select)
+  const tsGrupo = new TomSelect("#grupo", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => {
+      populateClasses();
+      resetPage();
+    },
+  });
+
+  const tsClasse = new TomSelect("#classe", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => resetPage(),
+  });
+
+  function getSelectedTipos() {
+    return [...tipoChecks].filter(c => c.checked).map(c => c.value);
+  }
+
+  function getFilters() {
+    return {
+      tipos:   getSelectedTipos(),
+      grupos:  tsGrupo.getValue(),   // array of short codes
+      classes: tsClasse.getValue(),  // array of short codes
+      codigo:  codigoIn.value.trim(),
+      nome:    nomeIn.value.trim(),
+    };
+  }
+
+  function codeOf(label) {
+    return label.split(" - ")[0].trim();
+  }
+
+  function populateGrupos() {
+    const tipos = new Set(getSelectedTipos());
+    const prev = tsGrupo.getValue(); // preserve current selection
+    const seen = new Set();
+    const options = [];
+    for (const [t, g] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      const code = codeOf(g);
+      if (!seen.has(code)) { seen.add(code); options.push({ value: code, text: g }); }
+    }
+    tsGrupo.clearOptions();
+    for (const opt of options) tsGrupo.addOption(opt);
+    // Keep previously selected values that are still valid
+    const valid = prev.filter(v => seen.has(v));
+    tsGrupo.setValue(valid, true);
+  }
+
+  function populateClasses() {
+    const tipos  = new Set(getSelectedTipos());
+    const grupos = new Set(tsGrupo.getValue());
+    const prev = tsClasse.getValue();
+    const seen = new Set();
+    const options = [];
+    for (const [t, g, c] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      if (grupos.size && !grupos.has(codeOf(g))) continue;
+      const code = codeOf(c);
+      if (!seen.has(code)) { seen.add(code); options.push({ value: code, text: c }); }
+    }
+    tsClasse.clearOptions();
+    for (const opt of options) tsClasse.addOption(opt);
+    const valid = prev.filter(v => seen.has(v));
+    tsClasse.setValue(valid, true);
+  }
+
+  // Build SQL IN clause with numbered params: (:p0, :p1, ...)
+  function inClause(col, values, prefix, params) {
+    const placeholders = values.map((v, i) => {
+      const key = `:${prefix}${i}`;
+      params[key] = v;
+      return key;
+    });
+    return `${col} IN (${placeholders.join(",")})`;
+  }
+
+  function buildQuery(countOnly) {
+    const f = getFilters();
+    const clauses = [];
+    const params = {};
+
+    if (f.tipos.length && f.tipos.length < 2)  clauses.push(inClause("tipo", f.tipos, "t", params));
+    if (f.grupos.length)  clauses.push(inClause("grupo", f.grupos, "g", params));
+    if (f.classes.length) clauses.push(inClause("classe", f.classes, "c", params));
+    if (f.codigo) { clauses.push("codigo LIKE :codigo"); params[":codigo"] = `%${f.codigo}%`; }
+    if (f.nome)   { clauses.push("nome LIKE :nome");     params[":nome"]   = `%${f.nome}%`; }
+
+    const where = clauses.length ? " WHERE " + clauses.join(" AND ") : "";
+
+    if (countOnly) {
+      return { sql: "SELECT COUNT(*) FROM items" + where, params };
+    }
+    return {
+      sql: "SELECT codigo, tipo, grupo, classe, nome FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
+      params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
+    };
+  }
+
+  const tipoLabels = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
+
+  function query() {
+    const countQ = buildQuery(true);
+    const total = db.exec(countQ.sql, countQ.params)[0].values[0][0];
+
+    const dataQ = buildQuery(false);
+    const rows = db.exec(dataQ.sql, dataQ.params);
+    const data = rows.length ? rows[0].values : [];
+
+    const start = total > 0 ? page * PAGE_SIZE + 1 : 0;
+    const end = Math.min((page + 1) * PAGE_SIZE, total);
+    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${total.toLocaleString("pt-BR")} itens`;
+
+    prevBtn.disabled = page === 0;
+    nextBtn.disabled = end >= total;
+
+    tbody.innerHTML = "";
+    for (const [codigo, tipo, grupo, classe, nome] of data) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${esc(codigo)}</td>
+        <td>${esc(tipoLabels[tipo] || tipo)}</td>
+        <td>${esc(grupoLabels.get(grupo) || grupo)}</td>
+        <td>${esc(classeLabels.get(classe) || classe)}</td>
+        <td class="nome">${esc(nome)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function resetPage() { page = 0; query(); }
+
+  // Debounce for text inputs
+  let debounceTimer;
+  function debouncedReset() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(resetPage, 300);
+  }
+
+  // Event listeners
+  tipoChecks.forEach(c => c.addEventListener("change", () => {
+    populateGrupos();
+    populateClasses();
+    resetPage();
+  }));
+
+  codigoIn.addEventListener("input", debouncedReset);
+  nomeIn.addEventListener("input", debouncedReset);
+
+  prevBtn.addEventListener("click", () => { page--; query(); });
+  nextBtn.addEventListener("click", () => { page++; query(); });
+
+  // Initial render
+  populateGrupos();
+  populateClasses();
+  query();
+})();
+</script>
+</body>
+</html>

@@ -1,2 +1,3 @@
-*.db
-*.csv
+/data.db
+/main.csv
+site/data.db
