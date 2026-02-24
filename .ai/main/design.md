@@ -12,10 +12,14 @@ Serve a slim SQLite database (~43 MB) and query it client-side using sql.js. Thi
 | Column | Distinct | UI |
 |--------|----------|----|
 | tipo | 2 | Checkboxes (multi-select, both checked = all) |
-| grupo | 85 | Tom Select multi-select with search (cascaded from tipo) |
-| classe | 831 | Tom Select multi-select with search (cascaded from grupo) |
+| grupo | 85 | Tom Select search + visible facet list sorted by count desc (cascaded from tipo) |
+| classe | 831 | Tom Select search + visible facet list sorted by count desc (cascaded from grupo) |
 | codigo | 22,935 | Text input with LIKE |
 | nome | 21,813 | Text input with LIKE |
+| spec (codigoEspecificacao) | 201,785 | Text input with LIKE |
+
+## Faceted counts
+Each filter displays the count of matching items next to each value. Counts are computed excluding the facet's own filter (standard faceted search: shows what you'd get for each option given all other constraints). Counts update live as any filter or the spec search changes.
 
 ## Pagination
 50 rows/page via SQL LIMIT/OFFSET. Prev/Next buttons + result count.

@@ -33,8 +33,27 @@
   .filter-group .ts-control { border-radius: 4px; }
   .checkbox-group { display: flex; gap: 1rem; flex-wrap: wrap; }
   .checkbox-group label { font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; }
+  .facet-count { color: #999; font-size: 0.85em; }
+
+  .facet-list { max-height: 220px; overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
+  .facet-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.82rem;
+    border-bottom: 1px solid #f0f0f0; user-select: none;
+  }
+  .facet-item:last-child { border-bottom: none; }
+  .facet-item:hover { background: #f5f8fc; }
+  .facet-item.selected { background: #e8f0fe; font-weight: 600; }
+  .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
 
   .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
+
+  .search-bar { margin-bottom: 1rem; }
+  .search-bar input {
+    width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 1rem; background: #fff;
+  }
 
   .pagination {
     display: flex; align-items: center; justify-content: space-between;
@@ -52,7 +71,8 @@
   th { background: #f0f0f0; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; white-space: nowrap; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
   tr:hover td { background: #fafafa; }
-  td.nome { max-width: 500px; word-break: break-word; }
+  td.nome, td.spec { max-width: 400px; word-break: break-word; }
+  mark { background: #fff59d; padding: 0; }
 
   @media (max-width: 900px) {
     .layout { flex-direction: column; }
@@ -71,19 +91,21 @@
       <div class="filter-group">
         <label>Tipo</label>
         <div class="checkbox-group">
-          <label><input type="checkbox" name="tipo" value="MATERIAL" checked> Material</label>
-          <label><input type="checkbox" name="tipo" value="SERVICO" checked> Servi&ccedil;o</label>
+          <label><input type="checkbox" name="tipo" value="MATERIAL" checked> <span>Material</span></label>
+          <label><input type="checkbox" name="tipo" value="SERVICO" checked> <span>Servi&ccedil;o</span></label>
         </div>
       </div>
 
       <div class="filter-group">
         <label for="grupo">Grupo</label>
-        <select id="grupo" multiple placeholder="Todos"></select>
+        <select id="grupo" multiple placeholder="Buscar grupo..."></select>
+        <div id="grupo-facets" class="facet-list"></div>
       </div>
 
       <div class="filter-group">
         <label for="classe">Classe</label>
-        <select id="classe" multiple placeholder="Todos"></select>
+        <select id="classe" multiple placeholder="Buscar classe..."></select>
+        <div id="classe-facets" class="facet-list"></div>
       </div>
 
       <div class="filter-group">
@@ -95,9 +117,13 @@
         <label for="nome">Nome</label>
         <input type="text" id="nome" placeholder="Buscar nome...">
       </div>
+
     </aside>
 
     <section class="main">
+      <div class="search-bar">
+        <input type="text" id="spec" placeholder="Buscar especifica&ccedil;&atilde;o...">
+      </div>
       <div class="pagination">
         <span class="info" id="info"></span>
         <div>
@@ -113,6 +139,7 @@
             <th>Grupo</th>
             <th>Classe</th>
             <th>Nome</th>
+            <th>Especifica&ccedil;&atilde;o</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -122,11 +149,13 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 (async () => {
   const PAGE_SIZE = 50;
   let db, hierarchy, page = 0;
+  let updating = false; // guard against cascading onChange during facet updates
 
   // Load sql.js and the database
   const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/${f}` });
@@ -151,13 +180,16 @@
   document.getElementById("app").style.display = "block";
 
   // DOM refs
-  const tipoChecks = document.querySelectorAll('input[name="tipo"]');
-  const codigoIn   = document.getElementById("codigo");
-  const nomeIn     = document.getElementById("nome");
-  const tbody      = document.getElementById("tbody");
-  const infoEl     = document.getElementById("info");
-  const prevBtn    = document.getElementById("prev");
-  const nextBtn    = document.getElementById("next");
+  const tipoChecks   = document.querySelectorAll('input[name="tipo"]');
+  const codigoIn     = document.getElementById("codigo");
+  const nomeIn       = document.getElementById("nome");
+  const specIn       = document.getElementById("spec");
+  const grupoFacets  = document.getElementById("grupo-facets");
+  const classeFacets = document.getElementById("classe-facets");
+  const tbody        = document.getElementById("tbody");
+  const infoEl       = document.getElementById("info");
+  const prevBtn      = document.getElementById("prev");
+  const nextBtn      = document.getElementById("next");
 
   // Initialize Tom Select on grupo and classe (multi-select)
   const tsGrupo = new TomSelect("#grupo", {
@@ -165,10 +197,7 @@
     placeholder: "Todos",
     maxItems: null,
     sortField: { field: "text", direction: "asc" },
-    onChange: () => {
-      populateClasses();
-      resetPage();
-    },
+    onChange: () => { if (!updating) refresh(); },
   });
 
   const tsClasse = new TomSelect("#classe", {
@@ -176,7 +205,7 @@
     placeholder: "Todos",
     maxItems: null,
     sortField: { field: "text", direction: "asc" },
-    onChange: () => resetPage(),
+    onChange: () => { if (!updating) refresh(); },
   });
 
   function getSelectedTipos() {
@@ -186,10 +215,11 @@
   function getFilters() {
     return {
       tipos:   getSelectedTipos(),
-      grupos:  tsGrupo.getValue(),   // array of short codes
-      classes: tsClasse.getValue(),  // array of short codes
+      grupos:  tsGrupo.getValue(),
+      classes: tsClasse.getValue(),
       codigo:  codigoIn.value.trim(),
       nome:    nomeIn.value.trim(),
+      spec:    specIn.value.trim(),
     };
   }
 
@@ -197,39 +227,8 @@
     return label.split(" - ")[0].trim();
   }
 
-  function populateGrupos() {
-    const tipos = new Set(getSelectedTipos());
-    const prev = tsGrupo.getValue(); // preserve current selection
-    const seen = new Set();
-    const options = [];
-    for (const [t, g] of hierarchy) {
-      if (tipos.size && !tipos.has(t)) continue;
-      const code = codeOf(g);
-      if (!seen.has(code)) { seen.add(code); options.push({ value: code, text: g }); }
-    }
-    tsGrupo.clearOptions();
-    for (const opt of options) tsGrupo.addOption(opt);
-    // Keep previously selected values that are still valid
-    const valid = prev.filter(v => seen.has(v));
-    tsGrupo.setValue(valid, true);
-  }
-
-  function populateClasses() {
-    const tipos  = new Set(getSelectedTipos());
-    const grupos = new Set(tsGrupo.getValue());
-    const prev = tsClasse.getValue();
-    const seen = new Set();
-    const options = [];
-    for (const [t, g, c] of hierarchy) {
-      if (tipos.size && !tipos.has(t)) continue;
-      if (grupos.size && !grupos.has(codeOf(g))) continue;
-      const code = codeOf(c);
-      if (!seen.has(code)) { seen.add(code); options.push({ value: code, text: c }); }
-    }
-    tsClasse.clearOptions();
-    for (const opt of options) tsClasse.addOption(opt);
-    const valid = prev.filter(v => seen.has(v));
-    tsClasse.setValue(valid, true);
+  function fmt(n) {
+    return n.toLocaleString("pt-BR");
   }
 
   // Build SQL IN clause with numbered params: (:p0, :p1, ...)
@@ -242,29 +241,142 @@
     return `${col} IN (${placeholders.join(",")})`;
   }
 
-  function buildQuery(countOnly) {
+  // Build WHERE clause, optionally excluding one facet
+  function buildWhere(exclude) {
     const f = getFilters();
     const clauses = [];
     const params = {};
 
-    if (f.tipos.length && f.tipos.length < 2)  clauses.push(inClause("tipo", f.tipos, "t", params));
-    if (f.grupos.length)  clauses.push(inClause("grupo", f.grupos, "g", params));
-    if (f.classes.length) clauses.push(inClause("classe", f.classes, "c", params));
+    if (exclude !== "tipo" && f.tipos.length && f.tipos.length < 2)
+      clauses.push(inClause("tipo", f.tipos, "t", params));
+    if (exclude !== "grupo" && f.grupos.length)
+      clauses.push(inClause("grupo", f.grupos, "g", params));
+    if (exclude !== "classe" && f.classes.length)
+      clauses.push(inClause("classe", f.classes, "c", params));
     if (f.codigo) { clauses.push("codigo LIKE :codigo"); params[":codigo"] = `%${f.codigo}%`; }
     if (f.nome)   { clauses.push("nome LIKE :nome");     params[":nome"]   = `%${f.nome}%`; }
+    if (f.spec)   { clauses.push("spec LIKE :spec");     params[":spec"]   = `%${f.spec}%`; }
 
-    const where = clauses.length ? " WHERE " + clauses.join(" AND ") : "";
+    return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
+  }
 
+  // Run a GROUP BY query and return a Map of value -> count
+  function facetCounts(col, exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT ${col}, COUNT(*) FROM items${where} GROUP BY ${col}`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [val, count] of result[0].values) counts.set(val, count);
+    }
+    return counts;
+  }
+
+  // Update tipo checkbox labels with counts
+  function updateTipoCounts() {
+    const counts = facetCounts("tipo", "tipo");
+    const labels = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
+    tipoChecks.forEach(cb => {
+      const count = counts.get(cb.value) || 0;
+      cb.parentElement.querySelector("span").innerHTML =
+        `${labels[cb.value]} <span class="facet-count">(${fmt(count)})</span>`;
+    });
+  }
+
+  // Render a clickable facet list sorted by count desc
+  function renderFacetList(container, items, selected, ts) {
+    // items: [{ code, label, count }], sorted by count desc
+    const selSet = new Set(selected);
+    container.innerHTML = "";
+    for (const { code, label, count } of items) {
+      const div = document.createElement("div");
+      div.className = "facet-item" + (selSet.has(code) ? " selected" : "");
+      div.innerHTML = `<span class="facet-label" title="${esc(label)}">${esc(label)}</span><span class="facet-badge">${fmt(count)}</span>`;
+      div.addEventListener("click", () => {
+        const cur = ts.getValue();
+        if (cur.includes(code)) {
+          ts.removeItem(code, true);
+        } else {
+          ts.addItem(code, true);
+        }
+        refresh();
+      });
+      container.appendChild(div);
+    }
+  }
+
+  // Populate grupo options from hierarchy, with facet counts + visible list
+  function populateGrupos() {
+    const tipos = new Set(getSelectedTipos());
+    const counts = facetCounts("grupo", "grupo");
+    const prev = tsGrupo.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      const code = codeOf(g);
+      if (!seen.has(code)) {
+        seen.add(code);
+        const count = counts.get(code) || 0;
+        items.push({ code, label: g, count });
+      }
+    }
+    // Update Tom Select options
+    tsGrupo.clearOptions();
+    for (const { code, label, count } of items) {
+      tsGrupo.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsGrupo.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(grupoFacets, sorted, valid, tsGrupo);
+  }
+
+  // Populate classe options from hierarchy, with facet counts + visible list
+  function populateClasses() {
+    const tipos  = new Set(getSelectedTipos());
+    const grupos = new Set(tsGrupo.getValue());
+    const counts = facetCounts("classe", "classe");
+    const prev = tsClasse.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g, c] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      if (grupos.size && !grupos.has(codeOf(g))) continue;
+      const code = codeOf(c);
+      if (!seen.has(code)) {
+        seen.add(code);
+        const count = counts.get(code) || 0;
+        items.push({ code, label: c, count });
+      }
+    }
+    // Update Tom Select options
+    tsClasse.clearOptions();
+    for (const { code, label, count } of items) {
+      tsClasse.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsClasse.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(classeFacets, sorted, valid, tsClasse);
+  }
+
+  function buildQuery(countOnly) {
+    const { where, params } = buildWhere();
     if (countOnly) {
       return { sql: "SELECT COUNT(*) FROM items" + where, params };
     }
     return {
-      sql: "SELECT codigo, tipo, grupo, classe, nome FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, tipo, grupo, classe, nome, spec FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
 
-  const tipoLabels = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
+  const tipoLabelMap = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
 
   function query() {
     const countQ = buildQuery(true);
@@ -276,22 +388,29 @@
 
     const start = total > 0 ? page * PAGE_SIZE + 1 : 0;
     const end = Math.min((page + 1) * PAGE_SIZE, total);
-    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${total.toLocaleString("pt-BR")} itens`;
+    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${fmt(total)} itens`;
 
     prevBtn.disabled = page === 0;
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, tipo, grupo, classe, nome] of data) {
+    for (const [codigo, tipo, grupo, classe, nome, spec] of data) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${esc(codigo)}</td>
-        <td>${esc(tipoLabels[tipo] || tipo)}</td>
+        <td>${esc(tipoLabelMap[tipo] || tipo)}</td>
         <td>${esc(grupoLabels.get(grupo) || grupo)}</td>
         <td>${esc(classeLabels.get(classe) || classe)}</td>
         <td class="nome">${esc(nome)}</td>
+        <td class="spec">${esc(spec)}</td>
       `;
       tbody.appendChild(tr);
+    }
+
+    // Highlight spec search term in the Especificação column
+    const specTerm = specIn.value.trim();
+    if (specTerm) {
+      new Mark(tbody.querySelectorAll("td.spec")).mark(specTerm, { separateWordSearch: false });
     }
   }
 
@@ -300,32 +419,35 @@
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
-  function resetPage() { page = 0; query(); }
+  // Full refresh: update data table + all facet counts
+  function refresh() {
+    page = 0;
+    updating = true;
+    query();
+    updateTipoCounts();
+    populateGrupos();
+    populateClasses();
+    updating = false;
+  }
 
   // Debounce for text inputs
   let debounceTimer;
-  function debouncedReset() {
+  function debouncedRefresh() {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(resetPage, 300);
+    debounceTimer = setTimeout(refresh, 300);
   }
 
   // Event listeners
-  tipoChecks.forEach(c => c.addEventListener("change", () => {
-    populateGrupos();
-    populateClasses();
-    resetPage();
-  }));
-
-  codigoIn.addEventListener("input", debouncedReset);
-  nomeIn.addEventListener("input", debouncedReset);
+  tipoChecks.forEach(c => c.addEventListener("change", refresh));
+  codigoIn.addEventListener("input", debouncedRefresh);
+  nomeIn.addEventListener("input", debouncedRefresh);
+  specIn.addEventListener("input", debouncedRefresh);
 
   prevBtn.addEventListener("click", () => { page--; query(); });
   nextBtn.addEventListener("click", () => { page++; query(); });
 
   // Initial render
-  populateGrupos();
-  populateClasses();
-  query();
+  refresh();
 })();
 </script>
 </body>

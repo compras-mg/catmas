@@ -29,7 +29,8 @@ def main():
             grupo    TEXT NOT NULL,
             classe   TEXT NOT NULL,
             codigo   TEXT NOT NULL,
-            nome     TEXT NOT NULL
+            nome     TEXT NOT NULL,
+            spec     TEXT NOT NULL
         )
     """)
 
@@ -39,17 +40,18 @@ def main():
             materialOuServico_classe_codigoGrupoFormatado,
             materialOuServico_classe_codigoNomeFormatado,
             CAST(codigo AS TEXT),
-            descricaoItem
+            descricaoItem,
+            codigoEspecificacao
         FROM items
     """).fetchall()
 
     # Convert grupo/classe to short codes
     slim_rows = [
-        (tipo, code_prefix(grupo), code_prefix(classe), codigo, nome or "")
-        for tipo, grupo, classe, codigo, nome in rows
+        (tipo, code_prefix(grupo), code_prefix(classe), codigo, nome or "", spec or "")
+        for tipo, grupo, classe, codigo, nome, spec in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
