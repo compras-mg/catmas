@@ -91,11 +91,11 @@ def main():
     dst.execute("CREATE INDEX idx_codigo ON items(codigo)")
     dst.execute("CREATE INDEX idx_composite ON items(tipo, grupo, classe)")
 
-    # FTS4 full-text search index on spec, material name, grupo label, classe label
+    # FTS5 full-text search index on spec, material name, grupo label, classe label
     dst.execute("""
-        CREATE VIRTUAL TABLE items_fts USING fts4(
+        CREATE VIRTUAL TABLE items_fts USING fts5(
             spec, material_nome, grupo_label, classe_label,
-            tokenize=unicode61 "remove_diacritics=1"
+            tokenize='unicode61 remove_diacritics 2'
         )
     """)
 

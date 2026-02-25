@@ -172,7 +172,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
 <script>
@@ -182,7 +182,7 @@
   let updating = false; // guard against cascading onChange during facet updates
 
   // Load sql.js and the database
-  const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/${f}` });
+  const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
   const resp = await fetch("data.db");
   const buf = await resp.arrayBuffer();
   db = new SQL.Database(new Uint8Array(buf));
@@ -408,8 +408,13 @@
     if (countOnly) {
       return { sql: "SELECT COUNT(*) FROM items" + where, params };
     }
+    const f = getFilters();
+    const order = f.spec
+      ? "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid)"
+      : "ORDER BY codigo";
+    if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }

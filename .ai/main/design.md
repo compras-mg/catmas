@@ -8,7 +8,7 @@ Serve a slim SQLite database from data/data.db and query it client-side using sq
 
 ## Data model
 - **items** table: tipo, grupo (short code), classe (short code), codigo, spec (especificacaoCompleta), situacao, natureza, material_codigo, material_nome, agricultura_familiar, sustentavel — 201,785 rows
-- **items_fts** FTS4 virtual table: spec, material_nome, grupo_label, classe_label — tokenized with `unicode61 remove_diacritics=1` for accent-insensitive Portuguese search. Rowids match items table. Grupo/classe stored as full labels for searchability.
+- **items_fts** FTS5 virtual table: spec, material_nome, grupo_label, classe_label — tokenized with `unicode61 remove_diacritics 2` for accent-insensitive Portuguese search. Rowids match items table. Grupo/classe stored as full labels for searchability.
 - **hierarchy** table: tipo, grupo (full label), classe (full label) — 831 rows for populating cascading dropdowns
 - Grupo/classe stored as short codes in items to reduce DB size
 
@@ -31,7 +31,7 @@ Serve a slim SQLite database from data/data.db and query it client-side using sq
 | sustentavel | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
 | grupo | 85 | Tom Select search + visible facet list sorted by count desc (cascaded from tipo) |
 | classe | 831 | Tom Select search + visible facet list sorted by count desc (cascaded from grupo) |
-| spec (especificacaoCompleta) | 201,785 | Text input with FTS4 MATCH (searches spec, material name, grupo label, classe label) |
+| spec (especificacaoCompleta) | 201,785 | Text input with FTS5 MATCH (searches spec, material name, grupo label, classe label) |
 
 ## Faceted counts
 Each filter displays the count of matching items next to each value. Counts are computed excluding the facet's own filter (standard faceted search: shows what you'd get for each option given all other constraints). Counts update live as any filter or the spec search changes.
