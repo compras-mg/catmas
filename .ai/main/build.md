@@ -3,17 +3,23 @@
 ## Key files
 | File | Purpose |
 |------|---------|
-| `build_db.py` | Exports slim DB from full data.db → site/data.db |
-| `site/index.html` | Self-contained SPA (HTML + CSS + vanilla JS) |
+| `data-raw/main.csv` | Source CSV (gitignored) |
+| `data-raw/data.db` | Full SQLite import from CSV (gitignored) |
+| `build_db.py` | Transforms data-raw/data.db → site/data.db |
 | `site/data.db` | Slim SQLite with items + hierarchy tables (gitignored) |
-| `justfile` | Recipes: `export`, `serve`, `import`, `tables`, `schema` |
+| `site/index.html` | Self-contained SPA (HTML + CSS + vanilla JS) |
+| `justfile` | Recipes: `load`, `transform`, `serve`, `tables`, `schema` |
 
 ## Indexes on items table
 - idx_tipo, idx_grupo, idx_classe, idx_codigo
 - idx_composite (tipo, grupo, classe)
 
+## Data pipeline
+`data-raw/main.csv` → `just load` → `data-raw/data.db` → `just transform` → `site/data.db`
+
 ## Justfile recipes
-- `just export` — runs build_db.py to create site/data.db
+- `just load` — imports data-raw/main.csv into data-raw/data.db via sqlite-utils
+- `just transform` — runs build_db.py to create data/data.db from data-raw/data.db
 - `just serve` — starts local HTTP server on port 8000
 
 ## Changelog
@@ -26,3 +32,4 @@
 - Added faceted counts to all filters (tipo checkboxes, grupo/classe Tom Selects). Uses GROUP BY queries excluding each facet's own filter. Counts update live on every filter/search change. Guard flag prevents cascading onChange loops during facet updates.
 - Grupo/classe now show visible facet lists below their Tom Select search boxes, sorted by count desc. Clicking a value toggles it in the Tom Select. Selected items are highlighted. Lists scroll at 220px max-height.
 - Added mark.js (v8.11.1 via CDN) to highlight spec search matches in the Especificação table column.
+- Reorganized data pipeline: data-raw/ for source files (CSV + full DB), site/data.db as transform output. Renamed recipes: import→load, export→transform.

@@ -1,7 +1,10 @@
 # Design
 
+## Data pipeline
+`data-raw/main.csv` → `just load` → `data-raw/data.db` → `just transform` → `site/data.db`
+
 ## Approach: sql.js (WASM SQLite in the browser)
-Serve a slim SQLite database (~43 MB) and query it client-side using sql.js. This gives real SQL WHERE/LIMIT/OFFSET without a backend.
+Serve a slim SQLite database from data/data.db and query it client-side using sql.js. This gives real SQL WHERE/LIMIT/OFFSET without a backend.
 
 ## Data model
 - **items** table: tipo, grupo (short code), classe (short code), codigo, nome — 201,785 rows

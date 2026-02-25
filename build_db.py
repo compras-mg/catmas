@@ -3,7 +3,7 @@
 import os
 import sqlite3
 
-SRC = "data.db"
+SRC = os.path.join("data-raw", "data.db")
 DEST = os.path.join("site", "data.db")
 
 
