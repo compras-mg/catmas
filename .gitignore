@@ -1,3 +1,4 @@
 data-raw/
 site/data.db
 *.pdf
+node_modules/
