@@ -194,17 +194,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <script>
 (async () => {
   const PAGE_SIZE = 50;
   let db, hierarchy, page = 0;
   let updating = false; // guard against cascading onChange during facet updates
 
-  // Load sql.js and the database
+  async function loadCompressedDbBytes(url) {
+    const resp = await fetch(url);
+    const gzBytes = new Uint8Array(await resp.arrayBuffer());
+
+    if ("DecompressionStream" in window) {
+      const ds = new DecompressionStream("gzip");
+      const stream = new Blob([gzBytes]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return pako.ungzip(gzBytes);
+  }
+
+  // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const resp = await fetch("data.db");
-  const buf = await resp.arrayBuffer();
-  db = new SQL.Database(new Uint8Array(buf));
+  const dbBytes = await loadCompressedDbBytes("data.db.gz");
+  db = new SQL.Database(dbBytes);
 
   // Pre-load hierarchy for cascading dropdowns
   hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;

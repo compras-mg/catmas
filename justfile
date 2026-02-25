@@ -8,7 +8,7 @@ schema:
     uv run sqlite-utils schema data-raw/data.db
 
 transform:
-    uv run python build_db.py
+    uv run python scripts/transform.py
 
 serve:
     cd site && python3 -m http.server 8000

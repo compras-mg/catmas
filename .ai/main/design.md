@@ -1,10 +1,12 @@
 # Design
 
 ## Data pipeline
-`data-raw/main.csv` → `just load` → `data-raw/data.db` → `just transform` → `site/data.db`
+`data-raw/main.csv` → `just load` → `data-raw/data.db` → `just transform` → `site/data.db` + `site/data.db.gz`
+
+For deployment on GitHub Pages, the app fetches `site/data.db.gz` and decompresses it in-browser before opening SQLite.
 
 ## Approach: sql.js (WASM SQLite in the browser)
-Serve a slim SQLite database from data/data.db and query it client-side using sql.js. This gives real SQL WHERE/LIMIT/OFFSET without a backend.
+Serve a slim SQLite database artifact as `site/data.db.gz`, decompress in-browser, and query it client-side using sql.js. This gives real SQL WHERE/LIMIT/OFFSET without a backend.
 
 ## Data model
 - **items** table: tipo, grupo (short code), classe (short code), codigo, spec (especificacaoCompleta), situacao, natureza, material_codigo, material_nome, agricultura_familiar, sustentavel — 201,785 rows
@@ -41,3 +43,9 @@ Each filter displays the count of matching items next to each value. Counts are 
 
 ## Architecture
 Single self-contained SPA — no build tools, no frameworks. HTML + CSS + vanilla JS in one file.
+
+## Compressed DB loading strategy
+- Runtime fetch target: `data.db.gz` (instead of `data.db`)
+- Preferred decompression path: browser-native `DecompressionStream("gzip")`
+- Fallback decompression path: `pako` CDN (`pako.ungzip`) when `DecompressionStream` is unavailable
+- Decompressed bytes are passed directly to `new SQL.Database(...)`, preserving existing SQL/FTS query flow

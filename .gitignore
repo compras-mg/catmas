@@ -1,4 +1,5 @@
 data-raw/
 site/data.db
+site/data.db.gz
 *.pdf
 node_modules/

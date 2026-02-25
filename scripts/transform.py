@@ -1,10 +1,12 @@
 """Export a slim SQLite database for the static site from the full data.db."""
 
+import gzip
 import os
 import sqlite3
 
 SRC = os.path.join("data-raw", "data.db")
 DEST = os.path.join("site", "data.db")
+DEST_GZ = os.path.join("site", "data.db.gz")
 
 
 def code_prefix(s):
@@ -18,6 +20,8 @@ def main():
     os.makedirs("site", exist_ok=True)
     if os.path.exists(DEST):
         os.remove(DEST)
+    if os.path.exists(DEST_GZ):
+        os.remove(DEST_GZ)
 
     src = sqlite3.connect(SRC)
     dst = sqlite3.connect(DEST)
@@ -117,8 +121,15 @@ def main():
     dst.close()
     src.close()
 
+    with open(DEST, "rb") as src_f, gzip.open(DEST_GZ, "wb", compresslevel=9) as dst_f:
+        dst_f.write(src_f.read())
+
     size_mb = os.path.getsize(DEST) / (1024 * 1024)
-    print(f"Created {DEST} ({size_mb:.1f} MB, {len(rows)} items, {len(hier)} hierarchy rows)")
+    size_gz_mb = os.path.getsize(DEST_GZ) / (1024 * 1024)
+    print(
+        f"Created {DEST} ({size_mb:.1f} MB) and {DEST_GZ} ({size_gz_mb:.1f} MB), "
+        f"{len(rows)} items, {len(hier)} hierarchy rows"
+    )
 
 
 if __name__ == "__main__":

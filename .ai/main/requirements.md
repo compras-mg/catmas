@@ -14,3 +14,5 @@ Brazilian government procurement teams need to browse and search the CATMAS cata
 - Full database is 1.1 GB with 75 columns — must serve only the 5 needed columns
 - No backend — all querying happens client-side
 - Must keep download size reasonable for browser loading
+- GitHub Pages/repository limits block committing a raw `site/data.db` artifact larger than 100 MB
+- Stop-gap deployment must keep current SQLite + FTS behavior while shipping a compressed artifact that is small enough for GitHub Pages
