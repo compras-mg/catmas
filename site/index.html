@@ -53,11 +53,24 @@
 
   .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
 
-  .search-bar { margin-bottom: 1rem; }
+  .clear-filters {
+    display: inline-block; font-size: 0.82rem; color: #417690; cursor: pointer;
+    border: none; background: none; padding: 0; text-decoration: underline;
+  }
+  .clear-filters:hover { color: #1a5276; }
+  .clear-filters[hidden] { display: none; }
+
+  .search-bar { margin-bottom: 1rem; position: relative; }
   .search-bar input {
-    width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ccc; border-radius: 4px;
+    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #ccc; border-radius: 4px;
     font-size: 1rem; background: #fff;
   }
+  .search-clear {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; color: #999; font-size: 1.1rem;
+    line-height: 1; padding: 0.2rem; display: none;
+  }
+  .search-clear:hover { color: #333; }
 
   .pagination {
     display: flex; align-items: center; justify-content: space-between;
@@ -90,7 +103,7 @@
   <header><h1>CATMAS Busca</h1></header>
   <div class="layout">
     <aside class="sidebar">
-      <h2>Filtros</h2>
+      <h2 style="display:flex;justify-content:space-between;align-items:center">Filtros <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button></h2>
 
       <div class="filter-group">
         <label>Tipo</label>
@@ -140,12 +153,12 @@
         <div id="classe-facets" class="facet-list"></div>
       </div>
 
-
     </aside>
 
     <section class="main">
       <div class="search-bar">
         <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
+        <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
       </div>
       <div class="pagination">
         <span class="info" id="info"></span>
@@ -215,6 +228,8 @@
   const infoEl       = document.getElementById("info");
   const prevBtn      = document.getElementById("prev");
   const nextBtn      = document.getElementById("next");
+  const clearFiltersBtn = document.getElementById("clear-filters");
+  const searchClearBtn  = document.getElementById("search-clear");
 
   // Initialize Tom Select on grupo and classe (multi-select)
   const tsGrupo = new TomSelect("#grupo", {
@@ -467,6 +482,21 @@
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  function hasActiveFilters() {
+    const f = getFilters();
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.grupos.length || f.classes.length;
+  }
+
+  function resetAllFilters() {
+    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
+      ul.querySelector("li.active")?.classList.remove("active");
+      ul.querySelector('li[data-value=""]').classList.add("active");
+    }
+    tsGrupo.clear(true);
+    tsClasse.clear(true);
+    refresh();
+  }
+
   // Full refresh: update data table + all facet counts
   function refresh() {
     page = 0;
@@ -479,6 +509,8 @@
     populateGrupos();
     populateClasses();
     updating = false;
+    clearFiltersBtn.hidden = !hasActiveFilters();
+    searchClearBtn.style.display = specIn.value ? "block" : "none";
   }
 
   // Debounce for text inputs
@@ -499,6 +531,8 @@
     });
   }
   specIn.addEventListener("input", debouncedRefresh);
+  clearFiltersBtn.addEventListener("click", resetAllFilters);
+  searchClearBtn.addEventListener("click", () => { specIn.value = ""; refresh(); });
 
   prevBtn.addEventListener("click", () => { page--; query(); });
   nextBtn.addEventListener("click", () => { page++; query(); });
