@@ -130,6 +130,7 @@
             <th>Situa&ccedil;&atilde;o</th>
             <th>Natureza de Despesa</th>
             <th>Material</th>
+            <th>Classe</th>
             <th>Grupo</th>
           </tr>
         </thead>
@@ -356,7 +357,7 @@
       return { sql: "SELECT COUNT(*) FROM items" + where, params };
     }
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, grupo FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
@@ -377,7 +378,7 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, grupo] of data) {
+    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, classe, grupo] of data) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${esc(codigo)}</td>
@@ -385,6 +386,7 @@
         <td>${esc(situacao)}</td>
         <td>${esc(natureza)}</td>
         <td class="material">${esc(mat_codigo)}<br>${esc(mat_nome)}</td>
+        <td>${esc(classeLabels.get(classe) || classe)}</td>
         <td>${esc(grupoLabels.get(grupo) || grupo)}</td>
       `;
       tbody.appendChild(tr);
