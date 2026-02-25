@@ -145,7 +145,7 @@
 
     <section class="main">
       <div class="search-bar">
-        <input type="text" id="spec" placeholder="Buscar especifica&ccedil;&atilde;o...">
+        <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
       </div>
       <div class="pagination">
         <span class="info" id="info"></span>
@@ -286,7 +286,7 @@
       clauses.push(inClause("grupo", f.grupos, "g", params));
     if (exclude !== "classe" && f.classes.length)
       clauses.push(inClause("classe", f.classes, "c", params));
-    if (f.spec)   { clauses.push("spec LIKE :spec");     params[":spec"]   = `%${f.spec}%`; }
+    if (f.spec)   { clauses.push("rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :fts)"); params[":fts"] = ftsQuery(f.spec); }
 
     return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
   }
@@ -447,8 +447,14 @@
     // Highlight spec search term in the Especificação column
     const specTerm = specIn.value.trim();
     if (specTerm) {
-      new Mark(tbody.querySelectorAll("td.spec")).mark(specTerm, { separateWordSearch: false });
+      new Mark(tbody.querySelectorAll("td.spec")).mark(specTerm, { separateWordSearch: true });
     }
+  }
+
+  function ftsQuery(input) {
+    const clean = input.replace(/[()+"*:^]/g, ' ');
+    const terms = clean.trim().split(/\s+/).filter(Boolean);
+    return terms.map(t => '"' + t + '"').join(' ');
   }
 
   function esc(s) {

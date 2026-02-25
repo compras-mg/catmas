@@ -8,6 +8,7 @@ Serve a slim SQLite database from data/data.db and query it client-side using sq
 
 ## Data model
 - **items** table: tipo, grupo (short code), classe (short code), codigo, spec (especificacaoCompleta), situacao, natureza, material_codigo, material_nome, agricultura_familiar, sustentavel — 201,785 rows
+- **items_fts** FTS4 virtual table: spec, material_nome, grupo_label, classe_label — tokenized with `unicode61 remove_diacritics=1` for accent-insensitive Portuguese search. Rowids match items table. Grupo/classe stored as full labels for searchability.
 - **hierarchy** table: tipo, grupo (full label), classe (full label) — 831 rows for populating cascading dropdowns
 - Grupo/classe stored as short codes in items to reduce DB size
 
@@ -24,13 +25,13 @@ Serve a slim SQLite database from data/data.db and query it client-side using sq
 ## Filter UI by cardinality
 | Column | Distinct | UI |
 |--------|----------|----|
-| tipo | 2 | Checkboxes (multi-select, both checked = all) |
-| situacao | 2 | Checkboxes: Ativo, Suspenso para compra (both checked = all) |
-| agricultura_familiar | 2 | Checkboxes: Sim (true), Não (false) (both checked = all) |
-| sustentavel | 2 | Checkboxes: Sim (true), Não (false) (both checked = all) |
+| tipo | 2 | Django-admin-style list: Todos / Material / Serviço (single-select) |
+| situacao | 2 | Django-admin-style list: Todos / Ativo / Suspenso para compra (single-select, Todos = no filter) |
+| agricultura_familiar | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
+| sustentavel | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
 | grupo | 85 | Tom Select search + visible facet list sorted by count desc (cascaded from tipo) |
 | classe | 831 | Tom Select search + visible facet list sorted by count desc (cascaded from grupo) |
-| spec (especificacaoCompleta) | 201,785 | Text input with LIKE |
+| spec (especificacaoCompleta) | 201,785 | Text input with FTS4 MATCH (searches spec, material name, grupo label, classe label) |
 
 ## Faceted counts
 Each filter displays the count of matching items next to each value. Counts are computed excluding the facet's own filter (standard faceted search: shows what you'd get for each option given all other constraints). Counts update live as any filter or the spec search changes.

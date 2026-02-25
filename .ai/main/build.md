@@ -13,6 +13,7 @@
 ## Indexes on items table
 - idx_tipo, idx_grupo, idx_classe, idx_codigo
 - idx_composite (tipo, grupo, classe)
+- items_fts: FTS4 virtual table indexing spec, material_nome, grupo_label, classe_label with `unicode61 remove_diacritics=1` tokenizer
 
 ## Data pipeline
 `data-raw/main.csv` → `just load` → `data-raw/data.db` → `just transform` → `site/data.db`
@@ -34,4 +35,6 @@
 - Added mark.js (v8.11.1 via CDN) to highlight spec search matches in the Especificação table column.
 - Reorganized data pipeline: data-raw/ for source files (CSV + full DB), site/data.db as transform output. Renamed recipes: import→load, export→transform.
 - Changed table columns to match legacy Portal de Compras: Código, Especificação do item, Situação, Natureza de Despesa, Material, Grupo. Replaced nome/codigoEspecificacao with especificacaoCompleta, situacao_descricao, materialOuServico_naturezaDespesa_nome, materialOuServico_codigoFormatado, materialOuServico_nome.
-- Added three sidebar checkbox filters: Situação (Ativo/Suspenso para compra), Agricultura Familiar (Sim/Não), Sustentável (Sim/Não). Added agricultura_familiar and sustentavel columns to items table in build_db.py (sourced from ehAgriculturaFamiliar and sustentavel, nulls coalesced to "false"). All three follow the same pattern as tipo: checkboxes with faceted counts, both checked by default (both checked = no filter applied).
+- Added three sidebar filters: Situação (Ativo/Suspenso para compra), Agricultura Familiar (Sim/Não), Sustentável (Sim/Não). Added agricultura_familiar and sustentavel columns to items table in build_db.py (sourced from ehAgriculturaFamiliar and sustentavel, nulls coalesced to "false").
+- Changed all low-cardinality filters (tipo, situação, agricultura familiar, sustentável) to Django-admin-style single-select lists (Todos / values). Active item has left border + colored text. Clicking an option selects it exclusively; "Todos" clears the filter. Faceted counts shown inline. Removed checkbox UI entirely.
+- Switched search from LIKE to SQLite FTS4. build_db.py creates items_fts virtual table indexing spec, material_nome, grupo_label, classe_label with unicode61 remove_diacritics=1 tokenizer. index.html uses ftsQuery() helper to sanitize input and FTS4 MATCH for fast token-based search across all four columns. mark.js now highlights each word separately.

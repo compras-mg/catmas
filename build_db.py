@@ -91,6 +91,23 @@ def main():
     dst.execute("CREATE INDEX idx_codigo ON items(codigo)")
     dst.execute("CREATE INDEX idx_composite ON items(tipo, grupo, classe)")
 
+    # FTS4 full-text search index on spec, material name, grupo label, classe label
+    dst.execute("""
+        CREATE VIRTUAL TABLE items_fts USING fts4(
+            spec, material_nome, grupo_label, classe_label,
+            tokenize=unicode61 "remove_diacritics=1"
+        )
+    """)
+
+    fts_rows = [
+        (spec or "", mat_nome or "", grupo or "", classe or "")
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust in rows
+    ]
+    dst.executemany(
+        "INSERT INTO items_fts(spec, material_nome, grupo_label, classe_label) VALUES (?,?,?,?)",
+        fts_rows,
+    )
+
     dst.commit()
     dst.execute("VACUUM")
     dst.close()
