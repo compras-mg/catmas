@@ -25,12 +25,15 @@ def main():
     # Items table: grupo/classe stored as short codes to save space
     dst.execute("""
         CREATE TABLE items (
-            tipo     TEXT NOT NULL,
-            grupo    TEXT NOT NULL,
-            classe   TEXT NOT NULL,
-            codigo   TEXT NOT NULL,
-            nome     TEXT NOT NULL,
-            spec     TEXT NOT NULL
+            tipo            TEXT NOT NULL,
+            grupo           TEXT NOT NULL,
+            classe          TEXT NOT NULL,
+            codigo          TEXT NOT NULL,
+            spec            TEXT NOT NULL,
+            situacao        TEXT NOT NULL,
+            natureza        TEXT NOT NULL,
+            material_codigo TEXT NOT NULL,
+            material_nome   TEXT NOT NULL
         )
     """)
 
@@ -40,18 +43,22 @@ def main():
             materialOuServico_classe_codigoGrupoFormatado,
             materialOuServico_classe_codigoNomeFormatado,
             CAST(codigo AS TEXT),
-            descricaoItem,
-            codigoEspecificacao
+            especificacaoCompleta,
+            situacao_descricao,
+            materialOuServico_naturezaDespesa_nome,
+            materialOuServico_codigoFormatado,
+            materialOuServico_nome
         FROM items
     """).fetchall()
 
     # Convert grupo/classe to short codes
     slim_rows = [
-        (tipo, code_prefix(grupo), code_prefix(classe), codigo, nome or "", spec or "")
-        for tipo, grupo, classe, codigo, nome, spec in rows
+        (tipo, code_prefix(grupo), code_prefix(classe), codigo,
+         spec or "", situacao or "", natureza or "", mat_codigo or "", mat_nome or "")
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""

@@ -71,7 +71,7 @@
   th { background: #f0f0f0; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; white-space: nowrap; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
   tr:hover td { background: #fafafa; }
-  td.nome, td.spec { max-width: 400px; word-break: break-word; }
+  td.spec, td.material { max-width: 400px; word-break: break-word; }
   mark { background: #fff59d; padding: 0; }
 
   @media (max-width: 900px) {
@@ -126,11 +126,11 @@
         <thead>
           <tr>
             <th>C&oacute;digo</th>
-            <th>Tipo</th>
+            <th>Especifica&ccedil;&atilde;o do item</th>
+            <th>Situa&ccedil;&atilde;o</th>
+            <th>Natureza de Despesa</th>
+            <th>Material</th>
             <th>Grupo</th>
-            <th>Classe</th>
-            <th>Nome</th>
-            <th>Especifica&ccedil;&atilde;o</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -356,12 +356,10 @@
       return { sql: "SELECT COUNT(*) FROM items" + where, params };
     }
     return {
-      sql: "SELECT codigo, tipo, grupo, classe, nome, spec FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, grupo FROM items" + where + " ORDER BY codigo LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
-
-  const tipoLabelMap = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
 
   function query() {
     const countQ = buildQuery(true);
@@ -379,15 +377,15 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, tipo, grupo, classe, nome, spec] of data) {
+    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, grupo] of data) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${esc(codigo)}</td>
-        <td>${esc(tipoLabelMap[tipo] || tipo)}</td>
-        <td>${esc(grupoLabels.get(grupo) || grupo)}</td>
-        <td>${esc(classeLabels.get(classe) || classe)}</td>
-        <td class="nome">${esc(nome)}</td>
         <td class="spec">${esc(spec)}</td>
+        <td>${esc(situacao)}</td>
+        <td>${esc(natureza)}</td>
+        <td class="material">${esc(mat_codigo)}<br>${esc(mat_nome)}</td>
+        <td>${esc(grupoLabels.get(grupo) || grupo)}</td>
       `;
       tbody.appendChild(tr);
     }
