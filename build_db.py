@@ -35,7 +35,9 @@ def main():
             material_codigo     TEXT NOT NULL,
             material_nome       TEXT NOT NULL,
             agricultura_familiar TEXT NOT NULL,
-            sustentavel         TEXT NOT NULL
+            sustentavel         TEXT NOT NULL,
+            item_id             INTEGER NOT NULL,
+            servico_id          INTEGER
         )
     """)
 
@@ -44,14 +46,16 @@ def main():
             ehMaterialOuServico_id,
             materialOuServico_classe_codigoGrupoFormatado,
             materialOuServico_classe_codigoNomeFormatado,
-            CAST(codigo AS TEXT),
+            PRINTF('%09d', codigo),
             especificacaoCompleta,
             situacao_descricao,
             materialOuServico_naturezaDespesa_nome,
             materialOuServico_codigoFormatado,
             materialOuServico_nome,
             COALESCE(ehAgriculturaFamiliar, 'false'),
-            COALESCE(sustentavel, 'false')
+            COALESCE(sustentavel, 'false'),
+            id,
+            materialOuServico_id
         FROM items
     """).fetchall()
 
@@ -59,11 +63,11 @@ def main():
     slim_rows = [
         (tipo, code_prefix(grupo), code_prefix(classe), codigo,
          spec or "", situacao or "", natureza or "", mat_codigo or "", mat_nome or "",
-         agri_fam or "false", sust or "false")
-        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust in rows
+         agri_fam or "false", sust or "false", item_id, servico_id)
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
@@ -101,7 +105,7 @@ def main():
 
     fts_rows = [
         (spec or "", mat_nome or "", grupo or "", classe or "")
-        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust in rows
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
     ]
     dst.executemany(
         "INSERT INTO items_fts(spec, material_nome, grupo_label, classe_label) VALUES (?,?,?,?)",

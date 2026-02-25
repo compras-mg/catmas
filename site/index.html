@@ -93,6 +93,9 @@
   tr:hover td { background: #f8f9fa; }
   td.spec, td.material { max-width: 400px; word-break: break-word; }
   mark { background: #fff59d; padding: 0; }
+  .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
+  .codigo-link:hover { text-decoration: underline; }
+  .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
 
   @media (max-width: 900px) {
     .layout { flex-direction: column; }
@@ -432,7 +435,7 @@
       : "ORDER BY codigo";
     if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
@@ -453,10 +456,13 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, classe, grupo] of data) {
+    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id] of data) {
+      const detailUrl = tipo === "SERVICO"
+        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
+        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${esc(codigo)}</td>
+        <td><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
         <td class="spec">${esc(spec)}</td>
         <td>${esc(situacao)}</td>
         <td>${esc(natureza)}</td>
