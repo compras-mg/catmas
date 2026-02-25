@@ -97,6 +97,30 @@
       </div>
 
       <div class="filter-group">
+        <label>Situa&ccedil;&atilde;o</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="situacao" value="Ativo" checked> <span>Ativo</span></label>
+          <label><input type="checkbox" name="situacao" value="Suspenso para compra" checked> <span>Suspenso para compra</span></label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Agricultura Familiar</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="agrifam" value="true" checked> <span>Sim</span></label>
+          <label><input type="checkbox" name="agrifam" value="false" checked> <span>N&atilde;o</span></label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Sustent&aacute;vel</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="sustentavel" value="true" checked> <span>Sim</span></label>
+          <label><input type="checkbox" name="sustentavel" value="false" checked> <span>N&atilde;o</span></label>
+        </div>
+      </div>
+
+      <div class="filter-group">
         <label for="grupo">Grupo</label>
         <select id="grupo" multiple placeholder="Buscar grupo..."></select>
         <div id="grupo-facets" class="facet-list"></div>
@@ -172,7 +196,10 @@
   document.getElementById("app").style.display = "block";
 
   // DOM refs
-  const tipoChecks   = document.querySelectorAll('input[name="tipo"]');
+  const tipoChecks       = document.querySelectorAll('input[name="tipo"]');
+  const situacaoChecks   = document.querySelectorAll('input[name="situacao"]');
+  const agriFamChecks    = document.querySelectorAll('input[name="agrifam"]');
+  const sustentavelChecks = document.querySelectorAll('input[name="sustentavel"]');
   const specIn       = document.getElementById("spec");
   const grupoFacets  = document.getElementById("grupo-facets");
   const classeFacets = document.getElementById("classe-facets");
@@ -202,12 +229,27 @@
     return [...tipoChecks].filter(c => c.checked).map(c => c.value);
   }
 
+  function getSelectedSituacoes() {
+    return [...situacaoChecks].filter(c => c.checked).map(c => c.value);
+  }
+
+  function getSelectedAgriFam() {
+    return [...agriFamChecks].filter(c => c.checked).map(c => c.value);
+  }
+
+  function getSelectedSustentavel() {
+    return [...sustentavelChecks].filter(c => c.checked).map(c => c.value);
+  }
+
   function getFilters() {
     return {
-      tipos:   getSelectedTipos(),
-      grupos:  tsGrupo.getValue(),
-      classes: tsClasse.getValue(),
-      spec:    specIn.value.trim(),
+      tipos:       getSelectedTipos(),
+      situacoes:   getSelectedSituacoes(),
+      agriFam:     getSelectedAgriFam(),
+      sustentavel: getSelectedSustentavel(),
+      grupos:      tsGrupo.getValue(),
+      classes:     tsClasse.getValue(),
+      spec:        specIn.value.trim(),
     };
   }
 
@@ -237,6 +279,12 @@
 
     if (exclude !== "tipo" && f.tipos.length && f.tipos.length < 2)
       clauses.push(inClause("tipo", f.tipos, "t", params));
+    if (exclude !== "situacao" && f.situacoes.length && f.situacoes.length < 2)
+      clauses.push(inClause("situacao", f.situacoes, "si", params));
+    if (exclude !== "agricultura_familiar" && f.agriFam.length && f.agriFam.length < 2)
+      clauses.push(inClause("agricultura_familiar", f.agriFam, "af", params));
+    if (exclude !== "sustentavel" && f.sustentavel.length && f.sustentavel.length < 2)
+      clauses.push(inClause("sustentavel", f.sustentavel, "su", params));
     if (exclude !== "grupo" && f.grupos.length)
       clauses.push(inClause("grupo", f.grupos, "g", params));
     if (exclude !== "classe" && f.classes.length)
@@ -263,6 +311,35 @@
     const counts = facetCounts("tipo", "tipo");
     const labels = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
     tipoChecks.forEach(cb => {
+      const count = counts.get(cb.value) || 0;
+      cb.parentElement.querySelector("span").innerHTML =
+        `${labels[cb.value]} <span class="facet-count">(${fmt(count)})</span>`;
+    });
+  }
+
+  function updateSituacaoCounts() {
+    const counts = facetCounts("situacao", "situacao");
+    situacaoChecks.forEach(cb => {
+      const count = counts.get(cb.value) || 0;
+      cb.parentElement.querySelector("span").innerHTML =
+        `${cb.value} <span class="facet-count">(${fmt(count)})</span>`;
+    });
+  }
+
+  function updateAgriFamCounts() {
+    const counts = facetCounts("agricultura_familiar", "agricultura_familiar");
+    const labels = { "true": "Sim", "false": "N\u00e3o" };
+    agriFamChecks.forEach(cb => {
+      const count = counts.get(cb.value) || 0;
+      cb.parentElement.querySelector("span").innerHTML =
+        `${labels[cb.value]} <span class="facet-count">(${fmt(count)})</span>`;
+    });
+  }
+
+  function updateSustentavelCounts() {
+    const counts = facetCounts("sustentavel", "sustentavel");
+    const labels = { "true": "Sim", "false": "N\u00e3o" };
+    sustentavelChecks.forEach(cb => {
       const count = counts.get(cb.value) || 0;
       cb.parentElement.querySelector("span").innerHTML =
         `${labels[cb.value]} <span class="facet-count">(${fmt(count)})</span>`;
@@ -410,6 +487,9 @@
     updating = true;
     query();
     updateTipoCounts();
+    updateSituacaoCounts();
+    updateAgriFamCounts();
+    updateSustentavelCounts();
     populateGrupos();
     populateClasses();
     updating = false;
@@ -424,6 +504,9 @@
 
   // Event listeners
   tipoChecks.forEach(c => c.addEventListener("change", refresh));
+  situacaoChecks.forEach(c => c.addEventListener("change", refresh));
+  agriFamChecks.forEach(c => c.addEventListener("change", refresh));
+  sustentavelChecks.forEach(c => c.addEventListener("change", refresh));
   specIn.addEventListener("input", debouncedRefresh);
 
   prevBtn.addEventListener("click", () => { page--; query(); });
