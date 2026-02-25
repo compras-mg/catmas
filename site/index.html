@@ -31,10 +31,6 @@
   }
   .filter-group .ts-wrapper { font-size: 0.9rem; }
   .filter-group .ts-control { border-radius: 4px; }
-  .checkbox-group { display: flex; gap: 1rem; flex-wrap: wrap; }
-  .checkbox-group label { font-weight: 400; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; }
-  .facet-count { color: #999; font-size: 0.85em; }
-
   .admin-filter { list-style: none; margin-top: 0.25rem; }
   .admin-filter li {
     padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.85rem;
@@ -98,10 +94,11 @@
 
       <div class="filter-group">
         <label>Tipo</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="tipo" value="MATERIAL" checked> <span>Material</span></label>
-          <label><input type="checkbox" name="tipo" value="SERVICO" checked> <span>Servi&ccedil;o</span></label>
-        </div>
+        <ul id="filter-tipo" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="MATERIAL">Material</li>
+          <li data-value="SERVICO">Servi&ccedil;o</li>
+        </ul>
       </div>
 
       <div class="filter-group">
@@ -207,7 +204,7 @@
   document.getElementById("app").style.display = "block";
 
   // DOM refs
-  const tipoChecks       = document.querySelectorAll('input[name="tipo"]');
+  const filterTipo       = document.getElementById("filter-tipo");
   const filterSituacao   = document.getElementById("filter-situacao");
   const filterAgriFam    = document.getElementById("filter-agrifam");
   const filterSustentavel = document.getElementById("filter-sustentavel");
@@ -236,10 +233,6 @@
     onChange: () => { if (!updating) refresh(); },
   });
 
-  function getSelectedTipos() {
-    return [...tipoChecks].filter(c => c.checked).map(c => c.value);
-  }
-
   function getAdminFilterValue(ul) {
     const active = ul.querySelector("li.active");
     return active ? active.dataset.value : "";
@@ -247,7 +240,7 @@
 
   function getFilters() {
     return {
-      tipos:       getSelectedTipos(),
+      tipo:        getAdminFilterValue(filterTipo),
       situacao:    getAdminFilterValue(filterSituacao),
       agriFam:     getAdminFilterValue(filterAgriFam),
       sustentavel: getAdminFilterValue(filterSustentavel),
@@ -281,8 +274,8 @@
     const clauses = [];
     const params = {};
 
-    if (exclude !== "tipo" && f.tipos.length && f.tipos.length < 2)
-      clauses.push(inClause("tipo", f.tipos, "t", params));
+    if (exclude !== "tipo" && f.tipo)
+      { clauses.push("tipo = :t0"); params[":t0"] = f.tipo; }
     if (exclude !== "situacao" && f.situacao)
       { clauses.push("situacao = :si0"); params[":si0"] = f.situacao; }
     if (exclude !== "agricultura_familiar" && f.agriFam)
@@ -308,17 +301,6 @@
       for (const [val, count] of result[0].values) counts.set(val, count);
     }
     return counts;
-  }
-
-  // Update tipo checkbox labels with counts
-  function updateTipoCounts() {
-    const counts = facetCounts("tipo", "tipo");
-    const labels = { MATERIAL: "Material", SERVICO: "Servi\u00e7o" };
-    tipoChecks.forEach(cb => {
-      const count = counts.get(cb.value) || 0;
-      cb.parentElement.querySelector("span").innerHTML =
-        `${labels[cb.value]} <span class="facet-count">(${fmt(count)})</span>`;
-    });
   }
 
   function updateAdminFilterCounts(ul, col) {
@@ -361,7 +343,8 @@
 
   // Populate grupo options from hierarchy, with facet counts + visible list
   function populateGrupos() {
-    const tipos = new Set(getSelectedTipos());
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos = tipoVal ? new Set([tipoVal]) : new Set();
     const counts = facetCounts("grupo", "grupo");
     const prev = tsGrupo.getValue();
     const seen = new Set();
@@ -390,7 +373,8 @@
 
   // Populate classe options from hierarchy, with facet counts + visible list
   function populateClasses() {
-    const tipos  = new Set(getSelectedTipos());
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos  = tipoVal ? new Set([tipoVal]) : new Set();
     const grupos = new Set(tsGrupo.getValue());
     const counts = facetCounts("classe", "classe");
     const prev = tsClasse.getValue();
@@ -477,7 +461,7 @@
     page = 0;
     updating = true;
     query();
-    updateTipoCounts();
+    updateAdminFilterCounts(filterTipo, "tipo");
     updateAdminFilterCounts(filterSituacao, "situacao");
     updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
     updateAdminFilterCounts(filterSustentavel, "sustentavel");
@@ -494,8 +478,7 @@
   }
 
   // Event listeners
-  tipoChecks.forEach(c => c.addEventListener("change", refresh));
-  for (const ul of [filterSituacao, filterAgriFam, filterSustentavel]) {
+  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
     ul.addEventListener("click", e => {
       const li = e.target.closest("li");
       if (!li) return;
