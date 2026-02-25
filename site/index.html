@@ -5,14 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CATMAS Busca</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
+  body { font-family: 'Raleway', sans-serif; background: #f2f5f7; color: #3c3c3b; }
   #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
   #app { display: none; }
 
-  header { background: #1a5276; color: #fff; padding: 1rem 1.5rem; }
-  header h1 { font-size: 1.4rem; font-weight: 600; }
+  header { background: #344e5c; color: #fff; padding: 1rem 1.5rem; }
+  header h1 { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; }
 
   .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
 
@@ -21,23 +24,23 @@
     border-right: 1px solid #ddd; padding: 1.25rem;
     overflow-y: auto;
   }
-  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; letter-spacing: 0.05em; }
+  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; margin-bottom: 1rem; letter-spacing: 0.05em; }
   .filter-group { margin-bottom: 1.25rem; }
   .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
   .filter-group select,
   .filter-group input[type="text"] {
-    width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;
+    width: 100%; padding: 0.5rem; border: 1px solid #949494; border-radius: 3px;
     font-size: 0.9rem; background: #fff;
   }
   .filter-group .ts-wrapper { font-size: 0.9rem; }
-  .filter-group .ts-control { border-radius: 4px; }
+  .filter-group .ts-control { border-radius: 3px; }
   .admin-filter { list-style: none; margin-top: 0.25rem; }
   .admin-filter li {
     padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.85rem;
     border-left: 3px solid transparent; color: #333;
   }
   .admin-filter li:hover { background: #f5f8fc; }
-  .admin-filter li.active { border-left-color: #417690; color: #417690; font-weight: 600; }
+  .admin-filter li.active { border-left-color: #be1e2d; color: #be1e2d; font-weight: 600; }
 
   .facet-list { max-height: 220px; overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
   .facet-item {
@@ -47,22 +50,22 @@
   }
   .facet-item:last-child { border-bottom: none; }
   .facet-item:hover { background: #f5f8fc; }
-  .facet-item.selected { background: #e8f0fe; font-weight: 600; }
+  .facet-item.selected { background: #fce8ea; font-weight: 600; }
   .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
 
   .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
 
   .clear-filters {
-    display: inline-block; font-size: 0.82rem; color: #417690; cursor: pointer;
+    display: inline-block; font-size: 0.82rem; color: #be1e2d; cursor: pointer;
     border: none; background: none; padding: 0; text-decoration: underline;
   }
-  .clear-filters:hover { color: #1a5276; }
+  .clear-filters:hover { color: #ef071b; }
   .clear-filters[hidden] { display: none; }
 
   .search-bar { margin-bottom: 1rem; position: relative; }
   .search-bar input {
-    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #ccc; border-radius: 4px;
+    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #949494; border-radius: 3px;
     font-size: 1rem; background: #fff;
   }
   .search-clear {
@@ -70,24 +73,24 @@
     border: none; background: none; cursor: pointer; color: #999; font-size: 1.1rem;
     line-height: 1; padding: 0.2rem; display: none;
   }
-  .search-clear:hover { color: #333; }
+  .search-clear:hover { color: #be1e2d; }
 
   .pagination {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
   }
-  .pagination .info { font-size: 0.9rem; color: #555; }
+  .pagination .info { font-size: 0.9rem; color: #3c3c3b; }
   .pagination button {
-    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 4px;
+    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 3px;
     background: #fff; cursor: pointer; font-size: 0.9rem;
   }
   .pagination button:disabled { opacity: 0.4; cursor: default; }
   .pagination button:not(:disabled):hover { background: #e8e8e8; }
 
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  th { background: #f0f0f0; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #666; border-bottom: 2px solid #ddd; white-space: nowrap; }
+  th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-  tr:hover td { background: #fafafa; }
+  tr:hover td { background: #f8f9fa; }
   td.spec, td.material { max-width: 400px; word-break: break-word; }
   mark { background: #fff59d; padding: 0; }
 
