@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Raleway', sans-serif; background: #f2f5f7; color: #3c3c3b; }
+  #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
+  #app { display: none; }
+
+  header { background: #be1e2d; color: #fff; padding: 1rem 1.5rem; }
+  header h1 { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; }
+
+  .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
+
+  .sidebar {
+    width: 320px; min-width: 320px; background: #fff;
+    border-right: 1px solid #ddd; padding: 1.25rem;
+    overflow-y: auto;
+  }
+  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; margin-bottom: 1rem; letter-spacing: 0.05em; }
+  .filter-group { margin-bottom: 1.25rem; }
+  .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .filter-group select,
+  .filter-group input[type="text"] {
+    width: 100%; padding: 0.5rem; border: 1px solid #949494; border-radius: 3px;
+    font-size: 0.9rem; background: #fff;
+  }
+  .filter-group .ts-wrapper { font-size: 0.9rem; }
+  .filter-group .ts-control { border-radius: 3px; }
+  .admin-filter { list-style: none; margin-top: 0.25rem; }
+  .admin-filter li {
+    padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.85rem;
+    border-left: 3px solid transparent; color: #333;
+  }
+  .admin-filter li:hover { background: #f5f8fc; }
+  .admin-filter li.active { border-left-color: #be1e2d; color: #be1e2d; font-weight: 600; }
+
+  .facet-list { max-height: 220px; overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
+  .facet-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.82rem;
+    border-bottom: 1px solid #f0f0f0; user-select: none;
+  }
+  .facet-item:last-child { border-bottom: none; }
+  .facet-item:hover { background: #f5f8fc; }
+  .facet-item.selected { background: #fce8ea; font-weight: 600; }
+  .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
+
+  .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
+
+  .clear-filters {
+    display: inline-block; font-size: 0.82rem; color: #be1e2d; cursor: pointer;
+    border: none; background: none; padding: 0; text-decoration: underline;
+  }
+  .clear-filters:hover { color: #ef071b; }
+  .clear-filters[hidden] { display: none; }
+
+  .search-bar { margin-bottom: 1rem; position: relative; }
+  .search-bar input {
+    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #949494; border-radius: 3px;
+    font-size: 1rem; background: #fff;
+  }
+  .search-clear {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; color: #999; font-size: 1.1rem;
+    line-height: 1; padding: 0.2rem; display: none;
+  }
+  .search-clear:hover { color: #be1e2d; }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .pagination .info { font-size: 0.9rem; color: #3c3c3b; }
+  .pagination button {
+    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 3px;
+    background: #fff; cursor: pointer; font-size: 0.9rem;
+  }
+  .pagination button:disabled { opacity: 0.4; cursor: default; }
+  .pagination button:not(:disabled):hover { background: #e8e8e8; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
+  td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+  tr:hover td { background: #f8f9fa; }
+  td.spec, td.material { max-width: 400px; word-break: break-word; }
+  mark { background: #fff59d; padding: 0; }
+  .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
+  .codigo-link:hover { text-decoration: underline; }
+  .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<div id="loading">Carregando banco de dados...</div>
+<div id="app">
+  <header><h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1></header>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2 style="display:flex;justify-content:space-between;align-items:center">Filtros <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button></h2>
+
+      <div class="filter-group">
+        <label>Tipo</label>
+        <ul id="filter-tipo" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="MATERIAL">Material</li>
+          <li data-value="SERVICO">Servi&ccedil;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Situa&ccedil;&atilde;o</label>
+        <ul id="filter-situacao" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="Ativo">Ativo</li>
+          <li data-value="Suspenso para compra">Suspenso para compra</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Agricultura Familiar</label>
+        <ul id="filter-agrifam" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Sustent&aacute;vel</label>
+        <ul id="filter-sustentavel" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label for="grupo">Grupo</label>
+        <select id="grupo" multiple placeholder="Buscar grupo..."></select>
+        <div id="grupo-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="classe">Classe</label>
+        <select id="classe" multiple placeholder="Buscar classe..."></select>
+        <div id="classe-facets" class="facet-list"></div>
+      </div>
+
+    </aside>
+
+    <section class="main">
+      <div class="search-bar">
+        <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
+        <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
+      </div>
+      <div class="pagination">
+        <span class="info" id="info"></span>
+        <div>
+          <button id="prev" disabled>&laquo; Anterior</button>
+          <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>C&oacute;digo</th>
+            <th>Especifica&ccedil;&atilde;o do item</th>
+            <th>Situa&ccedil;&atilde;o</th>
+            <th>Natureza de Despesa</th>
+            <th>Material</th>
+            <th>Classe</th>
+            <th>Grupo</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+(async () => {
+  const PAGE_SIZE = 50;
+  let db, hierarchy, page = 0;
+  let updating = false; // guard against cascading onChange during facet updates
+
+  async function loadCompressedDbBytes(url) {
+    const resp = await fetch(url);
+    const gzBytes = new Uint8Array(await resp.arrayBuffer());
+
+    if ("DecompressionStream" in window) {
+      const ds = new DecompressionStream("gzip");
+      const stream = new Blob([gzBytes]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return pako.ungzip(gzBytes);
+  }
+
+  // Load sql.js and the compressed database
+  const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
+  const dbBytes = await loadCompressedDbBytes("data.db.gz");
+  db = new SQL.Database(dbBytes);
+
+  // Pre-load hierarchy for cascading dropdowns
+  hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;
+
+  // Build lookup maps: short code -> full label
+  const grupoLabels = new Map();
+  const classeLabels = new Map();
+  for (const [, g, c] of hierarchy) {
+    const gCode = g.split(" - ")[0].trim();
+    const cCode = c.split(" - ")[0].trim();
+    if (!grupoLabels.has(gCode)) grupoLabels.set(gCode, g);
+    if (!classeLabels.has(cCode)) classeLabels.set(cCode, c);
+  }
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  // DOM refs
+  const filterTipo       = document.getElementById("filter-tipo");
+  const filterSituacao   = document.getElementById("filter-situacao");
+  const filterAgriFam    = document.getElementById("filter-agrifam");
+  const filterSustentavel = document.getElementById("filter-sustentavel");
+  const specIn       = document.getElementById("spec");
+  const grupoFacets  = document.getElementById("grupo-facets");
+  const classeFacets = document.getElementById("classe-facets");
+  const tbody        = document.getElementById("tbody");
+  const infoEl       = document.getElementById("info");
+  const prevBtn      = document.getElementById("prev");
+  const nextBtn      = document.getElementById("next");
+  const clearFiltersBtn = document.getElementById("clear-filters");
+  const searchClearBtn  = document.getElementById("search-clear");
+
+  // Initialize Tom Select on grupo and classe (multi-select)
+  const tsGrupo = new TomSelect("#grupo", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsClasse = new TomSelect("#classe", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  function getAdminFilterValue(ul) {
+    const active = ul.querySelector("li.active");
+    return active ? active.dataset.value : "";
+  }
+
+  function getFilters() {
+    return {
+      tipo:        getAdminFilterValue(filterTipo),
+      situacao:    getAdminFilterValue(filterSituacao),
+      agriFam:     getAdminFilterValue(filterAgriFam),
+      sustentavel: getAdminFilterValue(filterSustentavel),
+      grupos:      tsGrupo.getValue(),
+      classes:     tsClasse.getValue(),
+      spec:        specIn.value.trim(),
+    };
+  }
+
+  function codeOf(label) {
+    return label.split(" - ")[0].trim();
+  }
+
+  function fmt(n) {
+    return n.toLocaleString("pt-BR");
+  }
+
+  // Build SQL IN clause with numbered params: (:p0, :p1, ...)
+  function inClause(col, values, prefix, params) {
+    const placeholders = values.map((v, i) => {
+      const key = `:${prefix}${i}`;
+      params[key] = v;
+      return key;
+    });
+    return `${col} IN (${placeholders.join(",")})`;
+  }
+
+  // Build WHERE clause, optionally excluding one facet
+  function buildWhere(exclude) {
+    const f = getFilters();
+    const clauses = [];
+    const params = {};
+
+    if (exclude !== "tipo" && f.tipo)
+      { clauses.push("tipo = :t0"); params[":t0"] = f.tipo; }
+    if (exclude !== "situacao" && f.situacao)
+      { clauses.push("situacao = :si0"); params[":si0"] = f.situacao; }
+    if (exclude !== "agricultura_familiar" && f.agriFam)
+      { clauses.push("agricultura_familiar = :af0"); params[":af0"] = f.agriFam; }
+    if (exclude !== "sustentavel" && f.sustentavel)
+      { clauses.push("sustentavel = :su0"); params[":su0"] = f.sustentavel; }
+    if (exclude !== "grupo" && f.grupos.length)
+      clauses.push(inClause("grupo", f.grupos, "g", params));
+    if (exclude !== "classe" && f.classes.length)
+      clauses.push(inClause("classe", f.classes, "c", params));
+    if (f.spec)   { clauses.push("rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :fts)"); params[":fts"] = ftsQuery(f.spec); }
+
+    return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
+  }
+
+  // Run a GROUP BY query and return a Map of value -> count
+  function facetCounts(col, exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT ${col}, COUNT(*) FROM items${where} GROUP BY ${col}`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [val, count] of result[0].values) counts.set(val, count);
+    }
+    return counts;
+  }
+
+  function updateAdminFilterCounts(ul, col) {
+    const counts = facetCounts(col, col);
+    let total = 0;
+    for (const [, c] of counts) total += c;
+    ul.querySelectorAll("li").forEach(li => {
+      const val = li.dataset.value;
+      const baseText = li.textContent.replace(/\s*\([\d.]+\)$/, "");
+      if (val === "") {
+        li.textContent = `${baseText} (${fmt(total)})`;
+      } else {
+        const count = counts.get(val) || 0;
+        li.textContent = `${baseText} (${fmt(count)})`;
+      }
+    });
+  }
+
+  // Render a clickable facet list sorted by count desc
+  function renderFacetList(container, items, selected, ts) {
+    // items: [{ code, label, count }], sorted by count desc
+    const selSet = new Set(selected);
+    container.innerHTML = "";
+    for (const { code, label, count } of items) {
+      const div = document.createElement("div");
+      div.className = "facet-item" + (selSet.has(code) ? " selected" : "");
+      div.innerHTML = `<span class="facet-label" title="${esc(label)}">${esc(label)}</span><span class="facet-badge">${fmt(count)}</span>`;
+      div.addEventListener("click", () => {
+        const cur = ts.getValue();
+        if (cur.includes(code)) {
+          ts.removeItem(code, true);
+        } else {
+          ts.addItem(code, true);
+        }
+        refresh();
+      });
+      container.appendChild(div);
+    }
+  }
+
+  // Populate grupo options from hierarchy, with facet counts + visible list
+  function populateGrupos() {
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos = tipoVal ? new Set([tipoVal]) : new Set();
+    const counts = facetCounts("grupo", "grupo");
+    const prev = tsGrupo.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      const code = codeOf(g);
+      if (!seen.has(code)) {
+        seen.add(code);
+        const count = counts.get(code) || 0;
+        items.push({ code, label: g, count });
+      }
+    }
+    // Update Tom Select options
+    tsGrupo.clearOptions();
+    for (const { code, label, count } of items) {
+      tsGrupo.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsGrupo.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(grupoFacets, sorted, valid, tsGrupo);
+  }
+
+  // Populate classe options from hierarchy, with facet counts + visible list
+  function populateClasses() {
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos  = tipoVal ? new Set([tipoVal]) : new Set();
+    const grupos = new Set(tsGrupo.getValue());
+    const counts = facetCounts("classe", "classe");
+    const prev = tsClasse.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g, c] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      if (grupos.size && !grupos.has(codeOf(g))) continue;
+      const code = codeOf(c);
+      if (!seen.has(code)) {
+        seen.add(code);
+        const count = counts.get(code) || 0;
+        items.push({ code, label: c, count });
+      }
+    }
+    // Update Tom Select options
+    tsClasse.clearOptions();
+    for (const { code, label, count } of items) {
+      tsClasse.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsClasse.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(classeFacets, sorted, valid, tsClasse);
+  }
+
+  function buildQuery(countOnly) {
+    const { where, params } = buildWhere();
+    if (countOnly) {
+      return { sql: "SELECT COUNT(*) FROM items" + where, params };
+    }
+    const f = getFilters();
+    const order = f.spec
+      ? "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid)"
+      : "ORDER BY codigo";
+    if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
+    return {
+      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
+    };
+  }
+
+  function query() {
+    const countQ = buildQuery(true);
+    const total = db.exec(countQ.sql, countQ.params)[0].values[0][0];
+
+    const dataQ = buildQuery(false);
+    const rows = db.exec(dataQ.sql, dataQ.params);
+    const data = rows.length ? rows[0].values : [];
+
+    const start = total > 0 ? page * PAGE_SIZE + 1 : 0;
+    const end = Math.min((page + 1) * PAGE_SIZE, total);
+    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${fmt(total)} itens`;
+
+    prevBtn.disabled = page === 0;
+    nextBtn.disabled = end >= total;
+
+    tbody.innerHTML = "";
+    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id] of data) {
+      const detailUrl = tipo === "SERVICO"
+        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
+        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
+        <td class="spec">${esc(spec)}</td>
+        <td>${esc(situacao)}</td>
+        <td>${esc(natureza)}</td>
+        <td class="material">${esc(mat_codigo)}<br>${esc(mat_nome)}</td>
+        <td class="classe">${esc(classeLabels.get(classe) || classe)}</td>
+        <td class="grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    // Highlight search terms in all FTS-indexed columns
+    const specTerm = specIn.value.trim();
+    if (specTerm) {
+      new Mark(tbody.querySelectorAll("td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
+    }
+  }
+
+  function ftsQuery(input) {
+    const clean = input.replace(/[()+"*:^]/g, ' ');
+    const terms = clean.trim().split(/\s+/).filter(Boolean);
+    return terms.map(t => '"' + t + '"').join(' ');
+  }
+
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function hasActiveFilters() {
+    const f = getFilters();
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.grupos.length || f.classes.length;
+  }
+
+  function resetAllFilters() {
+    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
+      ul.querySelector("li.active")?.classList.remove("active");
+      ul.querySelector('li[data-value=""]').classList.add("active");
+    }
+    tsGrupo.clear(true);
+    tsClasse.clear(true);
+    refresh();
+  }
+
+  // Full refresh: update data table + all facet counts
+  function refresh() {
+    page = 0;
+    updating = true;
+    query();
+    updateAdminFilterCounts(filterTipo, "tipo");
+    updateAdminFilterCounts(filterSituacao, "situacao");
+    updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
+    updateAdminFilterCounts(filterSustentavel, "sustentavel");
+    populateGrupos();
+    populateClasses();
+    updating = false;
+    clearFiltersBtn.hidden = !hasActiveFilters();
+    searchClearBtn.style.display = specIn.value ? "block" : "none";
+  }
+
+  // Debounce for text inputs
+  let debounceTimer;
+  function debouncedRefresh() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(refresh, 300);
+  }
+
+  // Event listeners
+  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
+    ul.addEventListener("click", e => {
+      const li = e.target.closest("li");
+      if (!li) return;
+      ul.querySelector("li.active")?.classList.remove("active");
+      li.classList.add("active");
+      refresh();
+    });
+  }
+  specIn.addEventListener("input", debouncedRefresh);
+  clearFiltersBtn.addEventListener("click", resetAllFilters);
+  searchClearBtn.addEventListener("click", () => { specIn.value = ""; refresh(); });
+
+  prevBtn.addEventListener("click", () => { page--; query(); });
+  nextBtn.addEventListener("click", () => { page++; query(); });
+
+  // Initial render
+  refresh();
+})();
+</script>
+</body>
+</html>
