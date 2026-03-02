@@ -36,6 +36,8 @@ def main():
             spec                TEXT NOT NULL,
             situacao            TEXT NOT NULL,
             natureza            TEXT NOT NULL,
+            linhas_fornecimento TEXT NOT NULL,
+            elementos_codigos   TEXT NOT NULL,
             material_codigo     TEXT NOT NULL,
             material_nome       TEXT NOT NULL,
             agricultura_familiar TEXT NOT NULL,
@@ -54,6 +56,8 @@ def main():
             especificacaoCompleta,
             situacao_descricao,
             materialOuServico_naturezaDespesa_nome,
+            linhasFornecimentoFormatadas,
+            elementosItemDespesaFormatados,
             materialOuServico_codigoFormatado,
             materialOuServico_nome,
             COALESCE(ehAgriculturaFamiliar, 'false'),
@@ -66,12 +70,14 @@ def main():
     # Convert grupo/classe to short codes
     slim_rows = [
         (tipo, code_prefix(grupo), code_prefix(classe), codigo,
-         spec or "", situacao or "", natureza or "", mat_codigo or "", mat_nome or "",
+         spec or "", situacao or "", natureza or "", linhas_fornec or "", elementos_codigos or "",
+         mat_codigo or "", mat_nome or "",
          agri_fam or "false", sust or "false", item_id, servico_id)
-        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
+            mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
@@ -99,20 +105,21 @@ def main():
     dst.execute("CREATE INDEX idx_codigo ON items(codigo)")
     dst.execute("CREATE INDEX idx_composite ON items(tipo, grupo, classe)")
 
-    # FTS5 full-text search index on spec, material name, grupo label, classe label
+    # FTS5 full-text search index on code, spec, material name, grupo label, classe label
     dst.execute("""
         CREATE VIRTUAL TABLE items_fts USING fts5(
-            spec, material_nome, grupo_label, classe_label,
+            codigo, spec, material_nome, grupo_label, classe_label,
             tokenize='unicode61 remove_diacritics 2'
         )
     """)
 
     fts_rows = [
-        (spec or "", mat_nome or "", grupo or "", classe or "")
-        for tipo, grupo, classe, codigo, spec, situacao, natureza, mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
+        (codigo or "", spec or "", mat_nome or "", grupo or "", classe or "")
+        for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
+            mat_codigo, mat_nome, agri_fam, sust, item_id, servico_id in rows
     ]
     dst.executemany(
-        "INSERT INTO items_fts(spec, material_nome, grupo_label, classe_label) VALUES (?,?,?,?)",
+        "INSERT INTO items_fts(codigo, spec, material_nome, grupo_label, classe_label) VALUES (?,?,?,?,?)",
         fts_rows,
     )
 
