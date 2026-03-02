@@ -24,6 +24,10 @@
     border-right: 1px solid #ddd; padding: 1.25rem;
     overflow-y: auto;
   }
+  .sidebar-resizer {
+    width: 8px; cursor: ew-resize; background: #f2f5f7;
+    border-right: 1px solid #ddd;
+  }
   .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; margin-bottom: 1rem; letter-spacing: 0.05em; }
   .filter-group { margin-bottom: 1.25rem; }
   .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
@@ -42,7 +46,8 @@
   .admin-filter li:hover { background: #f5f8fc; }
   .admin-filter li.active { border-left-color: #be1e2d; color: #be1e2d; font-weight: 600; }
 
-  .facet-list { max-height: 220px; overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
+  :root { --facet-max-height: 220px; }
+  .facet-list { max-height: var(--facet-max-height); overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
   .facet-item {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.82rem;
@@ -53,6 +58,11 @@
   .facet-item.selected { background: #fce8ea; font-weight: 600; }
   .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
+  .facet-resizer {
+    height: 10px; margin: 0.6rem 0 0.2rem;
+    background: #f2f5f7; border: 1px solid #e0e0e0; border-radius: 6px;
+    cursor: ns-resize;
+  }
 
   .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
 
@@ -86,6 +96,23 @@
   }
   .pagination button:disabled { opacity: 0.4; cursor: default; }
   .pagination button:not(:disabled):hover { background: #e8e8e8; }
+  .toggle-cols {
+    width: 34px; height: 34px; border: 1px solid #ccc; border-radius: 3px;
+    background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #344e5c;
+  }
+  .toggle-cols:hover { background: #f5f5f5; }
+  .toggle-cols svg { display: block; width: 20px; height: 20px; }
+  .cols-panel {
+    position: absolute; right: 0; top: 38px; background: #fff; border: 1px solid #ddd;
+    border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.6rem 0.75rem;
+    min-width: 220px; z-index: 10; display: none;
+  }
+  .cols-panel.open { display: block; }
+  .cols-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #344e5c; margin-bottom: 0.4rem; }
+  .cols-panel label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; padding: 0.2rem 0; }
+  .cols-panel input { margin: 0; }
+  .table-wrap { position: relative; }
+  .col-hidden { display: none; }
 
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
@@ -100,6 +127,7 @@
   @media (max-width: 900px) {
     .layout { flex-direction: column; }
     .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #ddd; }
+    .sidebar-resizer { display: none; }
   }
 </style>
 </head>
@@ -148,6 +176,24 @@
       </div>
 
       <div class="filter-group">
+        <label for="natureza">Natureza de Despesa</label>
+        <select id="natureza" multiple placeholder="Buscar natureza..."></select>
+        <div id="natureza-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="elementos-item">Elemento-item de despesa</label>
+        <select id="elementos-item" multiple placeholder="Buscar elemento..."></select>
+        <div id="elementos-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="linhas-fornecimento">Linhas de Fornecimento</label>
+        <select id="linhas-fornecimento" multiple placeholder="Buscar linha..."></select>
+        <div id="linhas-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
         <label for="grupo">Grupo</label>
         <select id="grupo" multiple placeholder="Buscar grupo..."></select>
         <div id="grupo-facets" class="facet-list"></div>
@@ -159,34 +205,55 @@
         <div id="classe-facets" class="facet-list"></div>
       </div>
 
+      <div class="filter-group">
+        <label for="material">Material/Servi&ccedil;o</label>
+        <select id="material" multiple placeholder="Buscar material/servi&ccedil;o..."></select>
+        <div id="material-facets" class="facet-list"></div>
+        <div id="facet-resizer" class="facet-resizer" title="Arraste para ajustar a altura das listas"></div>
+      </div>
+
     </aside>
+    <div id="sidebar-resizer" class="sidebar-resizer" title="Arraste para ajustar a largura do menu"></div>
 
     <section class="main">
       <div class="search-bar">
         <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
         <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
       </div>
-      <div class="pagination">
-        <span class="info" id="info"></span>
-        <div>
-          <button id="prev" disabled>&laquo; Anterior</button>
-          <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
-        </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>C&oacute;digo</th>
-            <th>Especifica&ccedil;&atilde;o do item</th>
-            <th>Situa&ccedil;&atilde;o</th>
-            <th>Natureza de Despesa</th>
-            <th>Material</th>
-            <th>Classe</th>
-            <th>Grupo</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+  <div class="pagination">
+    <span class="info" id="info"></span>
+    <div>
+      <button id="toggle-extra-cols" class="toggle-cols" type="button" title="Selecionar colunas">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M12 5c6.5 0 10 7 10 7s-3.5 7-10 7S2 12 2 12s3.5-7 10-7zm0 2C8 7 5.33 10.53 4.38 12 5.33 13.47 8 17 12 17s6.67-3.53 7.62-5C18.67 10.53 16 7 12 7zm0 2.5A2.5 2.5 0 1 1 12 14.5 2.5 2.5 0 0 1 12 9.5z"></path>
+        </svg>
+      </button>
+      <button id="prev" disabled>&laquo; Anterior</button>
+      <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <div id="cols-panel" class="cols-panel" role="dialog" aria-label="Colunas">
+      <h3>Colunas</h3>
+      <div id="cols-panel-body"></div>
+    </div>
+    <table>
+    <thead>
+      <tr>
+        <th class="col-codigo">C&oacute;digo</th>
+        <th class="col-spec">Especifica&ccedil;&atilde;o do item</th>
+        <th class="col-situacao">Situa&ccedil;&atilde;o</th>
+        <th class="col-natureza">Natureza de Despesa</th>
+        <th class="col-elementos-codigos">Elemento-Item</th>
+        <th class="col-linhas">Linhas de Fornecimento</th>
+        <th class="col-material">Material/Servi&ccedil;o</th>
+        <th class="col-classe">Classe</th>
+        <th class="col-grupo">Grupo</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+    </table>
+  </div>
     </section>
   </div>
 </div>
@@ -215,7 +282,7 @@
 
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const dbBytes = await loadCompressedDbBytes("data.db.gz");
+  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260302-3");
   db = new SQL.Database(dbBytes);
 
   // Pre-load hierarchy for cascading dropdowns
@@ -224,6 +291,7 @@
   // Build lookup maps: short code -> full label
   const grupoLabels = new Map();
   const classeLabels = new Map();
+  const materialLabels = new Map();
   for (const [, g, c] of hierarchy) {
     const gCode = g.split(" - ")[0].trim();
     const cCode = c.split(" - ")[0].trim();
@@ -239,18 +307,61 @@
   const filterSituacao   = document.getElementById("filter-situacao");
   const filterAgriFam    = document.getElementById("filter-agrifam");
   const filterSustentavel = document.getElementById("filter-sustentavel");
+  const naturezaFacets = document.getElementById("natureza-facets");
+  const linhasFacets   = document.getElementById("linhas-facets");
+  const materialFacets = document.getElementById("material-facets");
+  const elementosFacets = document.getElementById("elementos-facets");
   const specIn       = document.getElementById("spec");
   const grupoFacets  = document.getElementById("grupo-facets");
   const classeFacets = document.getElementById("classe-facets");
+  const facetResizer = document.getElementById("facet-resizer");
+  const sidebarEl    = document.querySelector(".sidebar");
+  const sidebarResizer = document.getElementById("sidebar-resizer");
   const tbody        = document.getElementById("tbody");
   const infoEl       = document.getElementById("info");
   const prevBtn      = document.getElementById("prev");
   const nextBtn      = document.getElementById("next");
+  const toggleExtraColsBtn = document.getElementById("toggle-extra-cols");
+  const colsPanel = document.getElementById("cols-panel");
+  const colsPanelBody = document.getElementById("cols-panel-body");
   const clearFiltersBtn = document.getElementById("clear-filters");
   const searchClearBtn  = document.getElementById("search-clear");
+  const appEl = document.getElementById("app");
 
   // Initialize Tom Select on grupo and classe (multi-select)
   const tsGrupo = new TomSelect("#grupo", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsNatureza = new TomSelect("#natureza", {
+    plugins: ["remove_button"],
+    placeholder: "Todas",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsLinhas = new TomSelect("#linhas-fornecimento", {
+    plugins: ["remove_button"],
+    placeholder: "Todas",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsMaterial = new TomSelect("#material", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsElementos = new TomSelect("#elementos-item", {
     plugins: ["remove_button"],
     placeholder: "Todos",
     maxItems: null,
@@ -277,6 +388,10 @@
       situacao:    getAdminFilterValue(filterSituacao),
       agriFam:     getAdminFilterValue(filterAgriFam),
       sustentavel: getAdminFilterValue(filterSustentavel),
+      naturezas:   tsNatureza.getValue(),
+      linhas:      tsLinhas.getValue(),
+      materiais:   tsMaterial.getValue(),
+      elementos:   tsElementos.getValue(),
       grupos:      tsGrupo.getValue(),
       classes:     tsClasse.getValue(),
       spec:        specIn.value.trim(),
@@ -315,6 +430,16 @@
       { clauses.push("agricultura_familiar = :af0"); params[":af0"] = f.agriFam; }
     if (exclude !== "sustentavel" && f.sustentavel)
       { clauses.push("sustentavel = :su0"); params[":su0"] = f.sustentavel; }
+    if (exclude !== "natureza" && f.naturezas.length)
+      clauses.push(inClause("natureza", f.naturezas, "n", params));
+    if (exclude !== "linhas_fornecimento" && f.linhas.length)
+      clauses.push(inClause("linhas_fornecimento", f.linhas, "lf", params));
+    if (exclude !== "material" && f.materiais.length)
+      clauses.push(inClause("material_codigo", f.materiais, "m", params));
+    if (exclude !== "elementos_codigos" && f.elementos.length) {
+      const elClause = elementosClause(f.elementos, params);
+      if (elClause) clauses.push(elClause);
+    }
     if (exclude !== "grupo" && f.grupos.length)
       clauses.push(inClause("grupo", f.grupos, "g", params));
     if (exclude !== "classe" && f.classes.length)
@@ -332,6 +457,53 @@
     const counts = new Map();
     if (result.length) {
       for (const [val, count] of result[0].values) counts.set(val, count);
+    }
+    return counts;
+  }
+
+  function formatMaterialLabel(code, name) {
+    if (code && name) return `${code} - ${name}`;
+    return code || name || "";
+  }
+
+  function materialCounts(exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT material_codigo, material_nome, COUNT(*) FROM items${where} GROUP BY material_codigo, material_nome`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [code, name, count] of result[0].values) {
+        if (!code) continue;
+        if (!counts.has(code)) counts.set(code, { name, count });
+        else counts.get(code).count += count;
+      }
+    }
+    return counts;
+  }
+
+  function elementCodeOf(label) {
+    if (label == null) return "";
+    const text = String(label).trim();
+    return text.includes(" - ") ? text.split(" - ", 1)[0].trim() : text;
+  }
+
+  function elementosCounts(exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT elementos_codigos FROM items${where}`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [val] of result[0].values) {
+        if (!val) continue;
+        const parts = String(val).split(";").map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          const code = elementCodeOf(p);
+          if (!code) continue;
+          const current = counts.get(code);
+          if (current) current.count += 1;
+          else counts.set(code, { label: p, count: 1 });
+        }
+      }
     }
     return counts;
   }
@@ -374,6 +546,90 @@
     }
   }
 
+  function populateSimpleFacet(col, ts, container) {
+    const counts = facetCounts(col, col);
+    const prev = ts.getValue();
+    const items = [];
+    const seen = new Set();
+    for (const [val, count] of counts) {
+      if (val == null || val === "") continue;
+      seen.add(val);
+      items.push({ code: val, label: val, count });
+    }
+    // Ensure selected values remain visible even if count is zero
+    for (const val of prev) {
+      if (seen.has(val)) continue;
+      seen.add(val);
+      items.push({ code: val, label: val, count: 0 });
+    }
+    ts.clearOptions();
+    for (const { code, label, count } of items) {
+      ts.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    ts.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(container, sorted, valid, ts);
+  }
+
+  function populateMateriais() {
+    const counts = materialCounts("material");
+    const prev = tsMaterial.getValue();
+    const items = [];
+    const seen = new Set();
+    materialLabels.clear();
+    for (const [code, data] of counts) {
+      const label = formatMaterialLabel(code, data.name);
+      const selected = prev.includes(code);
+      if (data.count === 0 && !selected) continue;
+      seen.add(code);
+      materialLabels.set(code, label);
+      items.push({ code, label, count: data.count });
+    }
+    for (const code of prev) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      const label = code;
+      materialLabels.set(code, label);
+      items.push({ code, label, count: 0 });
+    }
+    tsMaterial.clearOptions();
+    for (const { code, label, count } of items) {
+      tsMaterial.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsMaterial.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(materialFacets, sorted, valid, tsMaterial);
+  }
+
+  function populateElementos() {
+    const counts = elementosCounts("elementos_codigos");
+    const prev = tsElementos.getValue();
+    const items = [];
+    const seen = new Set();
+    for (const [code, data] of counts) {
+      seen.add(code);
+      items.push({ code, label: data.label, count: data.count });
+    }
+    for (const code of prev) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      items.push({ code, label: code, count: 0 });
+    }
+    tsElementos.clearOptions();
+    for (const { code, label, count } of items) {
+      tsElementos.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsElementos.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(elementosFacets, sorted, valid, tsElementos);
+  }
+
   // Populate grupo options from hierarchy, with facet counts + visible list
   function populateGrupos() {
     const tipoVal = getAdminFilterValue(filterTipo);
@@ -385,11 +641,12 @@
     for (const [t, g] of hierarchy) {
       if (tipos.size && !tipos.has(t)) continue;
       const code = codeOf(g);
-      if (!seen.has(code)) {
-        seen.add(code);
-        const count = counts.get(code) || 0;
-        items.push({ code, label: g, count });
-      }
+      if (seen.has(code)) continue;
+      const count = counts.get(code) || 0;
+      const selected = prev.includes(code);
+      if (count === 0 && !selected) continue;
+      seen.add(code);
+      items.push({ code, label: g, count });
     }
     // Update Tom Select options
     tsGrupo.clearOptions();
@@ -417,11 +674,12 @@
       if (tipos.size && !tipos.has(t)) continue;
       if (grupos.size && !grupos.has(codeOf(g))) continue;
       const code = codeOf(c);
-      if (!seen.has(code)) {
-        seen.add(code);
-        const count = counts.get(code) || 0;
-        items.push({ code, label: c, count });
-      }
+      if (seen.has(code)) continue;
+      const count = counts.get(code) || 0;
+      const selected = prev.includes(code);
+      if (count === 0 && !selected) continue;
+      seen.add(code);
+      items.push({ code, label: c, count });
     }
     // Update Tom Select options
     tsClasse.clearOptions();
@@ -447,7 +705,7 @@
       : "ORDER BY codigo";
     if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
@@ -468,19 +726,22 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id] of data) {
+    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id] of data) {
       const detailUrl = tipo === "SERVICO"
         ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
         : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
+      const materialLabel = materialLabels.get(mat_codigo) || formatMaterialLabel(mat_codigo, mat_nome);
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
-        <td class="spec">${esc(spec)}</td>
-        <td>${esc(situacao)}</td>
-        <td>${esc(natureza)}</td>
-        <td class="material">${esc(mat_codigo)}<br>${esc(mat_nome)}</td>
-        <td class="classe">${esc(classeLabels.get(classe) || classe)}</td>
-        <td class="grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
+        <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
+        <td class="spec col-spec">${esc(spec)}</td>
+        <td class="col-situacao">${esc(situacao)}</td>
+        <td class="col-natureza">${esc(natureza)}</td>
+        <td class="col-elementos-codigos">${esc(elementos_codigos)}</td>
+        <td class="col-linhas">${esc(linhas_fornec)}</td>
+        <td class="material col-material">${esc(materialLabel)}</td>
+        <td class="classe col-classe">${esc(classeLabels.get(classe) || classe)}</td>
+        <td class="grupo col-grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
       `;
       tbody.appendChild(tr);
     }
@@ -488,7 +749,7 @@
     // Highlight search terms in all FTS-indexed columns
     const specTerm = specIn.value.trim();
     if (specTerm) {
-      new Mark(tbody.querySelectorAll("td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
+      new Mark(tbody.querySelectorAll("td.col-codigo, td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
     }
   }
 
@@ -498,6 +759,22 @@
     return terms.map(t => '"' + t + '"').join(' ');
   }
 
+  function elementosClause(values, params) {
+    const parts = [];
+    values.forEach((code, i) => {
+      const key = `:e${i}`;
+      params[`${key}b`] = code;
+      params[`${key}sp`] = `${code}; %`;
+      params[`${key}ss`] = `%; ${code}`;
+      params[`${key}d1`] = `${code} - %`;
+      params[`${key}d2`] = `%; ${code} - %`;
+      parts.push(
+        `(elementos_codigos = ${key}b OR elementos_codigos LIKE ${key}sp OR elementos_codigos LIKE ${key}ss OR elementos_codigos LIKE ${key}d1 OR elementos_codigos LIKE ${key}d2)`
+      );
+    });
+    return parts.length ? `(${parts.join(" OR ")})` : "";
+  }
+
   function esc(s) {
     if (s == null) return "";
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -505,7 +782,8 @@
 
   function hasActiveFilters() {
     const f = getFilters();
-    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.grupos.length || f.classes.length;
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.naturezas.length ||
+      f.linhas.length || f.materiais.length || f.elementos.length || f.grupos.length || f.classes.length;
   }
 
   function resetAllFilters() {
@@ -513,6 +791,10 @@
       ul.querySelector("li.active")?.classList.remove("active");
       ul.querySelector('li[data-value=""]').classList.add("active");
     }
+    tsNatureza.clear(true);
+    tsLinhas.clear(true);
+    tsMaterial.clear(true);
+    tsElementos.clear(true);
     tsGrupo.clear(true);
     tsClasse.clear(true);
     refresh();
@@ -522,11 +804,15 @@
   function refresh() {
     page = 0;
     updating = true;
-    query();
     updateAdminFilterCounts(filterTipo, "tipo");
     updateAdminFilterCounts(filterSituacao, "situacao");
     updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
     updateAdminFilterCounts(filterSustentavel, "sustentavel");
+    populateSimpleFacet("natureza", tsNatureza, naturezaFacets);
+    populateSimpleFacet("linhas_fornecimento", tsLinhas, linhasFacets);
+    populateMateriais();
+    query();
+    populateElementos();
     populateGrupos();
     populateClasses();
     updating = false;
@@ -558,7 +844,131 @@
   prevBtn.addEventListener("click", () => { page--; query(); });
   nextBtn.addEventListener("click", () => { page++; query(); });
 
+  const columns = [
+    { key: "codigo", label: "Codigo", cls: "col-codigo" },
+    { key: "spec", label: "Especificacao do item", cls: "col-spec" },
+    { key: "situacao", label: "Situacao", cls: "col-situacao" },
+    { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },
+    { key: "elementos_codigos", label: "Elemento-Item", cls: "col-elementos-codigos" },
+    { key: "linhas", label: "Linhas de Fornecimento", cls: "col-linhas" },
+    { key: "material", label: "Material/Servico", cls: "col-material" },
+    { key: "classe", label: "Classe", cls: "col-classe" },
+    { key: "grupo", label: "Grupo", cls: "col-grupo" },
+  ];
+
+  function loadHiddenCols() {
+    const raw = localStorage.getItem("catmas.hiddenCols");
+    if (!raw) return new Set();
+    try { return new Set(JSON.parse(raw)); } catch { return new Set(); }
+  }
+
+  function saveHiddenCols(set) {
+    localStorage.setItem("catmas.hiddenCols", JSON.stringify([...set]));
+  }
+
+  function applyHiddenCols(set) {
+    for (const { cls } of columns) {
+      document.querySelectorAll(`.${cls}`).forEach(el => {
+        if (set.has(cls)) el.classList.add("col-hidden");
+        else el.classList.remove("col-hidden");
+      });
+    }
+  }
+
+  function renderColsPanel() {
+    const hidden = loadHiddenCols();
+    colsPanelBody.innerHTML = "";
+    for (const col of columns) {
+      const id = `col-toggle-${col.key}`;
+      const row = document.createElement("label");
+      row.innerHTML = `<input type="checkbox" id="${id}" ${hidden.has(col.cls) ? "" : "checked"}> ${col.label}`;
+      row.querySelector("input").addEventListener("change", (e) => {
+        const h = loadHiddenCols();
+        if (e.target.checked) h.delete(col.cls);
+        else h.add(col.cls);
+        saveHiddenCols(h);
+        applyHiddenCols(h);
+      });
+      colsPanelBody.appendChild(row);
+    }
+    applyHiddenCols(hidden);
+  }
+
+  toggleExtraColsBtn.addEventListener("click", () => {
+    colsPanel.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (colsPanel.contains(e.target) || toggleExtraColsBtn.contains(e.target)) return;
+    colsPanel.classList.remove("open");
+  });
+
+  // Drag to resize facet lists height
+  let resizing = false;
+  let startY = 0;
+  let startHeight = 0;
+  const minFacetHeight = 120;
+  const maxFacetHeight = 600;
+
+  function currentFacetHeight() {
+    const h = parseFloat(getComputedStyle(grupoFacets).maxHeight) || 220;
+    return Math.max(minFacetHeight, Math.min(maxFacetHeight, h));
+  }
+
+  facetResizer.addEventListener("mousedown", (e) => {
+    resizing = true;
+    startY = e.clientY;
+    startHeight = currentFacetHeight();
+    document.body.style.userSelect = "none";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!resizing) return;
+    const delta = e.clientY - startY;
+    const next = Math.max(minFacetHeight, Math.min(maxFacetHeight, startHeight + delta));
+    document.documentElement.style.setProperty("--facet-max-height", `${next}px`);
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!resizing) return;
+    resizing = false;
+    document.body.style.userSelect = "";
+  });
+
+  // Drag to resize sidebar width
+  let resizingSidebar = false;
+  let startX = 0;
+  let startWidth = 0;
+  const minSidebarWidth = 260;
+  const maxSidebarWidth = 520;
+
+  function currentSidebarWidth() {
+    return sidebarEl.getBoundingClientRect().width;
+  }
+
+  sidebarResizer.addEventListener("mousedown", (e) => {
+    resizingSidebar = true;
+    startX = e.clientX;
+    startWidth = currentSidebarWidth();
+    document.body.style.userSelect = "none";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!resizingSidebar) return;
+    const delta = e.clientX - startX;
+    const next = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, startWidth + delta));
+    sidebarEl.style.width = `${next}px`;
+    sidebarEl.style.minWidth = `${next}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!resizingSidebar) return;
+    resizingSidebar = false;
+    document.body.style.userSelect = "";
+  });
+
   // Initial render
+  renderColsPanel();
   refresh();
 })();
 </script>
