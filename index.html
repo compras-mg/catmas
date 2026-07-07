@@ -283,7 +283,7 @@
 
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260702-1");
+  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260706-1");
   db = new SQL.Database(dbBytes);
 
   // Pre-load hierarchy for cascading dropdowns
