@@ -77,6 +77,8 @@ def main():
             id,
             materialouservico_id
         FROM items
+        WHERE codigo IS NOT NULL
+          AND TRIM(CAST(codigo AS TEXT)) != ''
     """).fetchall()
 
     # Convert grupo/classe to short codes
@@ -106,6 +108,8 @@ def main():
             materialouservico_classe_codigogrupoformatado,
             materialouservico_classe_codigonomeformatado
         FROM items
+        WHERE codigo IS NOT NULL
+          AND TRIM(CAST(codigo AS TEXT)) != ''
         ORDER BY 1, 2, 3
     """).fetchall()
 
