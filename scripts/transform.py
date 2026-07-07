@@ -16,6 +16,15 @@ def code_prefix(s):
     return s or ""
 
 
+def normalize_situacao(value):
+    value = (value or "").strip().upper()
+    if value == "ATIVO":
+        return "Ativo"
+    if value in {"SUSPENSO_PARA_COMPRA", "SUSPENSO PARA COMPRA"}:
+        return "Suspenso para compra"
+    return "Inativo"
+
+
 def main():
     os.makedirs("site", exist_ok=True)
     if os.path.exists(DEST):
@@ -49,28 +58,31 @@ def main():
 
     rows = src.execute("""
         SELECT
-            ehMaterialOuServico_id,
-            materialOuServico_classe_codigoGrupoFormatado,
-            materialOuServico_classe_codigoNomeFormatado,
-            PRINTF('%09d', codigo),
-            especificacaoCompleta,
-            situacao_descricao,
-            materialOuServico_naturezaDespesa_nome,
-            linhasFornecimentoFormatadas,
-            elementosItemDespesaFormatados,
-            materialOuServico_codigoFormatado,
-            materialOuServico_nome,
-            COALESCE(ehAgriculturaFamiliar, 'false'),
+            ehmaterialouservico_id,
+            materialouservico_classe_codigogrupoformatado,
+            materialouservico_classe_codigonomeformatado,
+            CASE
+                WHEN codigo IS NULL OR TRIM(CAST(codigo AS TEXT)) = '' THEN ''
+                ELSE PRINTF('%09d', codigo)
+            END,
+            COALESCE(NULLIF(especificacaocompleta, ''), descricaoitem),
+            situacao_id,
+            materialouservico_naturezadespesa_nome,
+            linhasfornecimentoformatadas,
+            elementositemdespesaformatados,
+            materialouservico_codigoformatado,
+            materialouservico_nome,
+            COALESCE(ehagriculturafamiliar, 'false'),
             COALESCE(sustentavel, 'false'),
             id,
-            materialOuServico_id
+            materialouservico_id
         FROM items
     """).fetchall()
 
     # Convert grupo/classe to short codes
     slim_rows = [
         (tipo, code_prefix(grupo), code_prefix(classe), codigo,
-         spec or "", situacao or "", natureza or "", linhas_fornec or "", elementos_codigos or "",
+         spec or "", normalize_situacao(situacao), natureza or "", linhas_fornec or "", elementos_codigos or "",
          mat_codigo or "", mat_nome or "",
          agri_fam or "false", sust or "false", item_id, servico_id)
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
@@ -90,9 +102,9 @@ def main():
 
     hier = src.execute("""
         SELECT DISTINCT
-            ehMaterialOuServico_id,
-            materialOuServico_classe_codigoGrupoFormatado,
-            materialOuServico_classe_codigoNomeFormatado
+            ehmaterialouservico_id,
+            materialouservico_classe_codigogrupoformatado,
+            materialouservico_classe_codigonomeformatado
         FROM items
         ORDER BY 1, 2, 3
     """).fetchall()
