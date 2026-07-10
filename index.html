@@ -279,12 +279,12 @@
 <script>
 (async () => {
   const PAGE_SIZE = 50;
+  const DATABASE_UPDATED_AT = "2026-07-07T09:12:00-03:00";
   let db, hierarchy, page = 0;
   let updating = false; // guard against cascading onChange during facet updates
 
   async function loadCompressedDbBytes(url) {
     const resp = await fetch(url);
-    updateLastModified(resp.headers.get("Last-Modified"));
     const gzBytes = new Uint8Array(await resp.arrayBuffer());
 
     if ("DecompressionStream" in window) {
@@ -295,9 +295,8 @@
     return pako.ungzip(gzBytes);
   }
 
-  function updateLastModified(rawDate) {
-    if (!rawDate) return;
-    const date = new Date(rawDate);
+  function renderDatabaseUpdatedAt() {
+    const date = new Date(DATABASE_UPDATED_AT);
     if (Number.isNaN(date.getTime())) return;
     const formatted = date.toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",
@@ -309,6 +308,8 @@
     }).replace(",", "");
     document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
   }
+
+  renderDatabaseUpdatedAt();
 
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
