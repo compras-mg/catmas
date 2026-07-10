@@ -14,8 +14,16 @@
   #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
   #app { display: none; }
 
-  header { background: #be1e2d; color: #fff; padding: 1rem 1.5rem; }
+  header {
+    background: #be1e2d; color: #fff; padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
   header h1 { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; }
+  .updated-at {
+    border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
+    padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 600;
+    white-space: nowrap; color: rgba(255,255,255,0.95);
+  }
 
   .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
 
@@ -125,6 +133,8 @@
   .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
 
   @media (max-width: 900px) {
+    header { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
+    .updated-at { white-space: normal; }
     .layout { flex-direction: column; }
     .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #ddd; }
     .sidebar-resizer { display: none; }
@@ -134,7 +144,10 @@
 <body>
 <div id="loading">Carregando banco de dados...</div>
 <div id="app">
-  <header><h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1></header>
+  <header>
+    <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
+    <div class="updated-at" id="updated-at">Atualizado em 07/07/2026 09:12</div>
+  </header>
   <div class="layout">
     <aside class="sidebar">
       <h2 style="display:flex;justify-content:space-between;align-items:center">Filtros <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button></h2>
@@ -271,6 +284,7 @@
 
   async function loadCompressedDbBytes(url) {
     const resp = await fetch(url);
+    updateLastModified(resp.headers.get("Last-Modified"));
     const gzBytes = new Uint8Array(await resp.arrayBuffer());
 
     if ("DecompressionStream" in window) {
@@ -279,6 +293,21 @@
       return new Uint8Array(await new Response(stream).arrayBuffer());
     }
     return pako.ungzip(gzBytes);
+  }
+
+  function updateLastModified(rawDate) {
+    if (!rawDate) return;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return;
+    const formatted = date.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).replace(",", "");
+    document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
   }
 
   // Load sql.js and the compressed database
