@@ -70,7 +70,11 @@ def main():
             materialouservico_naturezadespesa_nome,
             linhasfornecimentoformatadas,
             elementositemdespesaformatados,
-            materialouservico_codigoformatado,
+            CASE
+                WHEN materialouservico_codigoformatado IS NULL
+                  OR TRIM(CAST(materialouservico_codigoformatado AS TEXT)) = '' THEN ''
+                ELSE PRINTF('%08d', materialouservico_codigoformatado)
+            END,
             materialouservico_nome,
             COALESCE(ehagriculturafamiliar, 'false'),
             COALESCE(sustentavel, 'false'),
