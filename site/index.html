@@ -263,6 +263,9 @@
         <th class="col-material">Material/Servi&ccedil;o</th>
         <th class="col-classe">Classe</th>
         <th class="col-grupo">Grupo</th>
+        <th class="col-versao">Vers&atilde;o</th>
+        <th class="col-data-criacao">Data de cria&ccedil;&atilde;o</th>
+        <th class="col-data-atualizacao">&Uacute;ltima atualiza&ccedil;&atilde;o</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -313,7 +316,7 @@
 
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260716-1");
+  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260721-1");
   db = new SQL.Database(dbBytes);
 
   // Pre-load hierarchy for cascading dropdowns
@@ -736,7 +739,7 @@
       : "ORDER BY codigo";
     if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, versao, data_criacao, data_ultima_atualizacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
     };
   }
@@ -757,7 +760,7 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id] of data) {
+    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id, versao, data_criacao, data_ultima_atualizacao] of data) {
       const detailUrl = tipo === "SERVICO"
         ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
         : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
@@ -773,6 +776,9 @@
         <td class="material col-material">${esc(materialLabel)}</td>
         <td class="classe col-classe">${esc(classeLabels.get(classe) || classe)}</td>
         <td class="grupo col-grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
+        <td class="col-versao">${esc(versao)}</td>
+        <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
+        <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
       `;
       tbody.appendChild(tr);
     }
@@ -809,6 +815,20 @@
   function esc(s) {
     if (s == null) return "";
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "";
+    const date = new Date(String(value).trim());
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).replace(",", "");
   }
 
   function hasActiveFilters() {
@@ -885,6 +905,9 @@
     { key: "material", label: "Material/Servico", cls: "col-material" },
     { key: "classe", label: "Classe", cls: "col-classe" },
     { key: "grupo", label: "Grupo", cls: "col-grupo" },
+    { key: "versao", label: "Versao", cls: "col-versao" },
+    { key: "data_criacao", label: "Data de criacao", cls: "col-data-criacao" },
+    { key: "data_atualizacao", label: "Ultima atualizacao", cls: "col-data-atualizacao" },
   ];
 
   function loadHiddenCols() {
