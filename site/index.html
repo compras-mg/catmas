@@ -231,7 +231,7 @@
 
     <section class="main">
       <div class="search-bar">
-        <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
+        <input type="text" id="spec" placeholder="Buscar por c&oacute;digo, especifica&ccedil;&atilde;o, material, grupo ou classe...">
         <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
       </div>
   <div class="pagination">
@@ -478,7 +478,10 @@
       clauses.push(inClause("grupo", f.grupos, "g", params));
     if (exclude !== "classe" && f.classes.length)
       clauses.push(inClause("classe", f.classes, "c", params));
-    if (f.spec)   { clauses.push("rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :fts)"); params[":fts"] = ftsQuery(f.spec); }
+    if (f.spec) {
+      const searchClause = buildSearchClause(f.spec, params, "fts");
+      if (searchClause) clauses.push(searchClause);
+    }
 
     return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
   }
@@ -794,6 +797,40 @@
     const clean = input.replace(/[()+"*:^]/g, ' ');
     const terms = clean.trim().split(/\s+/).filter(Boolean);
     return terms.map(t => '"' + t + '"').join(' ');
+  }
+
+  function digitsOnly(input) {
+    return String(input || "").replace(/\D+/g, "");
+  }
+
+  function stripLeadingZeros(input) {
+    return String(input || "").replace(/^0+/, "") || "0";
+  }
+
+  function codeSearchTerms(input) {
+    return String(input || "")
+      .split(/\s+/)
+      .map(digitsOnly)
+      .filter(term => term.length >= 3);
+  }
+
+  function buildSearchClause(input, params, ftsKey) {
+    const clauses = [];
+    const fts = ftsQuery(input);
+    if (fts) {
+      params[`:${ftsKey}`] = fts;
+      clauses.push(`rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :${ftsKey})`);
+    }
+
+    codeSearchTerms(input).forEach((term, i) => {
+      const rawKey = `:codigo_raw_${i}`;
+      const normKey = `:codigo_norm_${i}`;
+      params[rawKey] = `%${term}%`;
+      params[normKey] = `%${stripLeadingZeros(term)}%`;
+      clauses.push(`(codigo LIKE ${rawKey} OR LTRIM(codigo, '0') LIKE ${normKey})`);
+    });
+
+    return clauses.length ? `(${clauses.join(" OR ")})` : "";
   }
 
   function elementosClause(values, params) {
