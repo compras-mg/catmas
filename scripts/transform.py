@@ -25,6 +25,11 @@ def normalize_situacao(value):
     return "Inativo"
 
 
+def normalize_bool(value):
+    value = (value or "").strip().lower()
+    return value if value in {"true", "false"} else ""
+
+
 def main():
     os.makedirs("site", exist_ok=True)
     if os.path.exists(DEST):
@@ -51,6 +56,7 @@ def main():
             material_nome       TEXT NOT NULL,
             agricultura_familiar TEXT NOT NULL,
             sustentavel         TEXT NOT NULL,
+            ok_registro_precos  TEXT NOT NULL,
             versao              INTEGER,
             data_criacao        TEXT NOT NULL,
             data_ultima_atualizacao TEXT NOT NULL,
@@ -81,6 +87,7 @@ def main():
             materialouservico_nome,
             COALESCE(ehagriculturafamiliar, 'false'),
             COALESCE(sustentavel, 'false'),
+            espokregprecos,
             versao,
             COALESCE(datacriacao, dataCriacao, ''),
             COALESCE(dataultimaatualizacao, dataUltimaAtualizacao, datacriacao, dataCriacao, ''),
@@ -96,14 +103,15 @@ def main():
         (tipo, code_prefix(grupo), code_prefix(classe), codigo,
          spec or "", normalize_situacao(situacao), natureza or "", linhas_fornec or "", elementos_codigos or "",
          mat_codigo or "", mat_nome or "",
-         agri_fam or "false", sust or "false", versao, data_criacao or "", data_ultima_atualizacao or "",
+         agri_fam or "false", sust or "false", normalize_bool(ok_registro_precos),
+         versao, data_criacao or "", data_ultima_atualizacao or "",
          item_id, servico_id)
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
-            mat_codigo, mat_nome, agri_fam, sust, versao, data_criacao, data_ultima_atualizacao,
+            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
@@ -144,7 +152,7 @@ def main():
     fts_rows = [
         (codigo or "", spec or "", mat_nome or "", grupo or "", classe or "")
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
-            mat_codigo, mat_nome, agri_fam, sust, versao, data_criacao, data_ultima_atualizacao,
+            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
     dst.executemany(

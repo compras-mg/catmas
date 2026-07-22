@@ -190,6 +190,16 @@
       </div>
 
       <div class="filter-group">
+        <label>Ok para Registro de Pre&ccedil;os</label>
+        <ul id="filter-registro-precos" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+          <li data-value="__empty__">N&atilde;o informado</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
         <label for="natureza">Natureza de Despesa</label>
         <select id="natureza" multiple placeholder="Buscar natureza..."></select>
         <div id="natureza-facets" class="facet-list"></div>
@@ -341,6 +351,7 @@
   const filterSituacao   = document.getElementById("filter-situacao");
   const filterAgriFam    = document.getElementById("filter-agrifam");
   const filterSustentavel = document.getElementById("filter-sustentavel");
+  const filterRegistroPrecos = document.getElementById("filter-registro-precos");
   const naturezaFacets = document.getElementById("natureza-facets");
   const linhasFacets   = document.getElementById("linhas-facets");
   const materialFacets = document.getElementById("material-facets");
@@ -422,6 +433,7 @@
       situacao:    getAdminFilterValue(filterSituacao),
       agriFam:     getAdminFilterValue(filterAgriFam),
       sustentavel: getAdminFilterValue(filterSustentavel),
+      registroPrecos: getAdminFilterValue(filterRegistroPrecos),
       naturezas:   tsNatureza.getValue(),
       linhas:      tsLinhas.getValue(),
       materiais:   tsMaterial.getValue(),
@@ -464,6 +476,10 @@
       { clauses.push("agricultura_familiar = :af0"); params[":af0"] = f.agriFam; }
     if (exclude !== "sustentavel" && f.sustentavel)
       { clauses.push("sustentavel = :su0"); params[":su0"] = f.sustentavel; }
+    if (exclude !== "ok_registro_precos" && f.registroPrecos) {
+      if (f.registroPrecos === "__empty__") clauses.push("ok_registro_precos = ''");
+      else { clauses.push("ok_registro_precos = :rp0"); params[":rp0"] = f.registroPrecos; }
+    }
     if (exclude !== "natureza" && f.naturezas.length)
       clauses.push(inClause("natureza", f.naturezas, "n", params));
     if (exclude !== "linhas_fornecimento" && f.linhas.length)
@@ -555,7 +571,7 @@
       if (val === "") {
         li.textContent = `${baseText} (${fmt(total)})`;
       } else {
-        const count = counts.get(val) || 0;
+        const count = counts.get(val === "__empty__" ? "" : val) || 0;
         li.textContent = `${baseText} (${fmt(count)})`;
       }
     });
@@ -870,12 +886,12 @@
 
   function hasActiveFilters() {
     const f = getFilters();
-    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.naturezas.length ||
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.registroPrecos || f.naturezas.length ||
       f.linhas.length || f.materiais.length || f.elementos.length || f.grupos.length || f.classes.length;
   }
 
   function resetAllFilters() {
-    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
+    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos]) {
       ul.querySelector("li.active")?.classList.remove("active");
       ul.querySelector('li[data-value=""]').classList.add("active");
     }
@@ -896,6 +912,7 @@
     updateAdminFilterCounts(filterSituacao, "situacao");
     updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
     updateAdminFilterCounts(filterSustentavel, "sustentavel");
+    updateAdminFilterCounts(filterRegistroPrecos, "ok_registro_precos");
     populateSimpleFacet("natureza", tsNatureza, naturezaFacets);
     populateSimpleFacet("linhas_fornecimento", tsLinhas, linhasFacets);
     populateMateriais();
@@ -916,7 +933,7 @@
   }
 
   // Event listeners
-  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel]) {
+  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos]) {
     ul.addEventListener("click", e => {
       const li = e.target.closest("li");
       if (!li) return;
