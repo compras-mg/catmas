@@ -130,6 +130,12 @@
   mark { background: #fff59d; padding: 0; }
   .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
   .codigo-link:hover { text-decoration: underline; }
+  .history-link {
+    display: inline-block; color: #344e5c; border: 1px solid #9caab2;
+    border-radius: 3px; padding: 0.3rem 0.5rem; text-decoration: none;
+    white-space: nowrap; font-size: 0.78rem; font-weight: 600;
+  }
+  .history-link:hover { color: #be1e2d; border-color: #be1e2d; background: #fce8ea; }
   .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
 
   @media (max-width: 900px) {
@@ -146,7 +152,7 @@
 <div id="app">
   <header>
     <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
-    <div class="updated-at" id="updated-at">Atualizado em 21/07/2026 20:42</div>
+    <div class="updated-at" id="updated-at">Atualizado em 16/07/2026 17:42</div>
   </header>
   <div class="layout">
     <aside class="sidebar">
@@ -250,7 +256,7 @@
 
     <section class="main">
       <div class="search-bar">
-        <input type="text" id="spec" placeholder="Buscar por especifica&ccedil;&atilde;o, material, grupo ou classe...">
+        <input type="text" id="spec" placeholder="Buscar por c&oacute;digo, especifica&ccedil;&atilde;o, material, grupo ou classe...">
         <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
       </div>
   <div class="pagination">
@@ -274,6 +280,7 @@
     <thead>
       <tr>
         <th class="col-codigo">C&oacute;digo</th>
+        <th class="col-historico">Hist&oacute;rico</th>
         <th class="col-spec">Especifica&ccedil;&atilde;o do item</th>
         <th class="col-situacao">Situa&ccedil;&atilde;o</th>
         <th class="col-natureza">Natureza de Despesa</th>
@@ -301,7 +308,7 @@
 <script>
 (async () => {
   const PAGE_SIZE = 50;
-  const DATABASE_UPDATED_AT = "2026-07-21T20:42:06-03:00";
+  const DATABASE_UPDATED_AT = "2026-07-16T17:42:00-03:00";
   let db, hierarchy, page = 0;
   let updating = false; // guard against cascading onChange during facet updates
 
@@ -800,6 +807,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
+        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}" class="history-link">Ver hist&oacute;rico</a></td>
         <td class="spec col-spec">${esc(spec)}</td>
         <td class="col-situacao">${esc(situacao)}</td>
         <td class="col-natureza">${esc(natureza)}</td>
@@ -853,10 +861,10 @@
 
     codeSearchTerms(input).forEach((term, i) => {
       const rawKey = `:codigo_raw_${i}`;
-      const normalizedKey = `:codigo_norm_${i}`;
+      const normKey = `:codigo_norm_${i}`;
       params[rawKey] = `%${term}%`;
-      params[normalizedKey] = `%${stripLeadingZeros(term)}%`;
-      clauses.push(`(codigo LIKE ${rawKey} OR LTRIM(codigo, '0') LIKE ${normalizedKey})`);
+      params[normKey] = `%${stripLeadingZeros(term)}%`;
+      clauses.push(`(codigo LIKE ${rawKey} OR LTRIM(codigo, '0') LIKE ${normKey})`);
     });
 
     return clauses.length ? `(${clauses.join(" OR ")})` : "";
@@ -965,6 +973,7 @@
 
   const columns = [
     { key: "codigo", label: "Codigo", cls: "col-codigo" },
+    { key: "historico", label: "Historico", cls: "col-historico" },
     { key: "spec", label: "Especificacao do item", cls: "col-spec" },
     { key: "situacao", label: "Situacao", cls: "col-situacao" },
     { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },

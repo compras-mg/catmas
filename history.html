@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico do item — CATMAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #be1e2d;
+    --brand-dark: #8f1521;
+    --blue: #344e5c;
+    --ink: #3c3c3b;
+    --muted: #69747a;
+    --bg: #f2f5f7;
+    --paper: #fff;
+    --line: #d8dfe3;
+    --soft: #f9eef0;
+    --ok: #27734a;
+    --ok-soft: #e7f5ed;
+    --warn: #986000;
+    --warn-soft: #fff5db;
+    --info-soft: #eaf2f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Raleway", sans-serif; line-height: 1.45;
+  }
+  button, select, input { font: inherit; }
+  a { color: inherit; }
+  header {
+    background: var(--brand); color: white; padding: 1rem max(1.25rem, calc((100% - 1380px) / 2));
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; font-weight: 900; text-transform: uppercase; }
+  .back-link {
+    color: white; border: 1px solid #ffffff80; border-radius: 3px;
+    padding: .45rem .7rem; text-decoration: none; font-size: .85rem; font-weight: 600;
+  }
+  .back-link:hover { background: #ffffff18; }
+  #loading {
+    min-height: 55vh; display: grid; place-items: center; color: var(--muted);
+    font-weight: 600; text-align: center; padding: 2rem;
+  }
+  #app { display: none; max-width: 1380px; margin: 0 auto; padding: 1.25rem; }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 1px 3px #0000000b;
+  }
+  .item-card { padding: 1.2rem 1.35rem; }
+  .item-top { display: flex; justify-content: space-between; gap: 1.25rem; align-items: flex-start; }
+  .item-card h2 { color: var(--blue); font-size: 1.3rem; margin: .45rem 0 .25rem; }
+  .item-code { font-size: 1.1rem; font-weight: 900; color: var(--brand); }
+  .item-spec { margin: .5rem 0; max-width: 1050px; }
+  .meta { color: var(--muted); font-size: .82rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+  .badge {
+    display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .55rem;
+    background: var(--info-soft); color: var(--blue); font-size: .75rem; font-weight: 600;
+  }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.brand { background: var(--soft); color: var(--brand); }
+  .tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-top: 1.1rem;
+    background: white; border-radius: 6px 6px 0 0; overflow-x: auto;
+  }
+  .tabs button {
+    border: 0; border-bottom: 3px solid transparent; background: white; color: var(--blue);
+    padding: .85rem 1rem; cursor: pointer; white-space: nowrap;
+  }
+  .tabs button.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 900; }
+  .panel { display: none; padding-top: 1rem; }
+  .panel.active { display: block; }
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center; gap: .8rem;
+    flex-wrap: wrap; margin-bottom: .8rem;
+  }
+  .toolbar-group { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
+  .toolbar select { border: 1px solid #949494; border-radius: 3px; padding: .45rem .55rem; background: white; }
+  .switch { display: inline-flex; gap: .45rem; align-items: center; font-size: .85rem; }
+  .split { display: grid; grid-template-columns: minmax(310px, .85fr) minmax(440px, 1.35fr); gap: 1rem; }
+  .timeline-card, .detail-card, .request-list, .request-detail, .compare-card { padding: 1rem; }
+  .timeline { position: relative; padding-left: 1.2rem; }
+  .timeline::before { content: ""; position: absolute; left: .32rem; top: .8rem; bottom: .8rem; width: 1px; background: var(--line); }
+  .event-button, .request-button {
+    position: relative; width: 100%; border: 0; border-bottom: 1px solid var(--line);
+    background: transparent; padding: .8rem .65rem; text-align: left; cursor: pointer;
+  }
+  .event-button::before {
+    content: ""; position: absolute; left: -1.02rem; top: 1.05rem; width: .58rem; height: .58rem;
+    border-radius: 50%; background: #9aa7ad; border: 2px solid var(--paper);
+  }
+  .event-button:hover, .request-button:hover { background: #f6f8f9; }
+  .event-button.active, .request-button.active { background: var(--soft); }
+  .event-button.active::before { background: var(--brand); }
+  .event-title { display: flex; justify-content: space-between; gap: .6rem; color: var(--blue); font-weight: 600; }
+  .event-meta { color: var(--muted); font-size: .77rem; margin-top: .3rem; }
+  .detail-title { color: var(--blue); margin: .25rem 0 .2rem; font-size: 1.2rem; }
+  .detail-section { border-top: 1px solid var(--line); padding-top: .85rem; margin-top: .85rem; }
+  .detail-section h3 { color: var(--blue); font-size: .92rem; margin: 0 0 .55rem; }
+  .raw-list { margin: 0; padding-left: 1.2rem; }
+  .raw-list li { margin: .45rem 0; }
+  .raw-code { font: .72rem ui-monospace, monospace; background: #edf1f3; border-radius: 3px; padding: .12rem .3rem; }
+  .request-list h2, .compare-card h2 { color: var(--blue); margin: 0 0 .6rem; font-size: 1.1rem; }
+  .request-button strong { color: var(--blue); }
+  .request-button .status { float: right; margin-left: .5rem; }
+  .request-summary {
+    display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap: .65rem;
+    margin-top: .8rem;
+  }
+  .summary-box { background: #f7f9fa; border: 1px solid var(--line); border-radius: 4px; padding: .65rem; }
+  .summary-box span { display: block; color: var(--muted); font-size: .72rem; text-transform: uppercase; }
+  .summary-box strong { display: block; margin-top: .2rem; color: var(--blue); }
+  .request-flow { margin: .5rem 0 0; padding: 0; list-style: none; }
+  .request-flow li { position: relative; padding: 0 0 1rem 1.4rem; }
+  .request-flow li::before {
+    content: ""; position: absolute; left: .15rem; top: .35rem; width: .55rem; height: .55rem;
+    border-radius: 50%; background: var(--brand);
+  }
+  .request-flow li::after {
+    content: ""; position: absolute; left: .41rem; top: .9rem; bottom: 0; width: 1px; background: var(--line);
+  }
+  .request-flow li:last-child::after { display: none; }
+  .flow-text { font-weight: 600; color: var(--blue); }
+  .flow-meta { color: var(--muted); font-size: .75rem; margin-top: .15rem; }
+  .compare-select { min-width: min(100%, 520px); }
+  .notice { padding: .75rem .85rem; border-radius: 4px; background: var(--warn-soft); color: #6f4b08; font-size: .85rem; margin: .75rem 0; }
+  .compare-grid { display: grid; grid-template-columns: 190px repeat(3, minmax(210px, 1fr)); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+  .compare-cell { min-width: 0; padding: .7rem; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  .compare-cell:nth-child(4n) { border-right: 0; }
+  .compare-head { background: var(--blue); color: white; font-weight: 900; }
+  .compare-label { background: #eef2f4; color: var(--blue); font-weight: 600; }
+  .compare-cell.changed { background: #fff8e7; }
+  .compare-cell.missing { color: var(--muted); font-style: italic; background: #fafbfb; }
+  .compare-components { margin-top: 1rem; }
+  .compare-components h3 { color: var(--blue); margin: 1rem 0 .5rem; font-size: 1rem; }
+  .component-label { font-weight: 600; color: var(--blue); margin-bottom: .25rem; }
+  .component-value { font-size: .82rem; }
+  .component-state { margin-top: .35rem; color: var(--muted); font-size: .74rem; }
+  .empty { color: var(--muted); font-style: italic; padding: 1rem 0; }
+  .error { max-width: 740px; margin: 3rem auto; background: white; border: 1px solid #e5b7bd; padding: 1.2rem; border-radius: 6px; }
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; }
+    .item-top { display: block; }
+    .badges { justify-content: flex-start; margin-top: .75rem; }
+    .compare-grid { grid-template-columns: 130px repeat(3, minmax(190px, 1fr)); overflow-x: auto; }
+    .request-summary { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Histórico do item CATMAS</h1>
+  <a class="back-link" href="./">← Voltar à pesquisa</a>
+</header>
+<div id="loading">Carregando o histórico do catálogo…</div>
+<main id="app">
+  <section class="card item-card" id="item-card"></section>
+  <nav class="tabs" aria-label="Visões do histórico">
+    <button class="active" data-panel="timeline-panel">Linha do tempo</button>
+    <button data-panel="admin-panel">Fluxo administrativo</button>
+    <button data-panel="compare-panel">Comparar versões</button>
+  </nav>
+
+  <section class="panel active" id="timeline-panel">
+    <div class="toolbar">
+      <div id="timeline-count" class="meta"></div>
+      <div class="toolbar-group">
+        <label>Categoria
+          <select id="event-filter">
+            <option value="all">Todos os eventos</option>
+            <option value="catalog">Alterações do catálogo</option>
+            <option value="status">Mudanças de situação</option>
+            <option value="integration">Comunicações de sistema</option>
+          </select>
+        </label>
+        <label class="switch"><input id="group-events" type="checkbox" checked> Agrupar eventos próximos</label>
+      </div>
+    </div>
+    <div class="split">
+      <section class="card timeline-card"><div class="timeline" id="timeline"></div></section>
+      <section class="card detail-card" id="event-detail"></section>
+    </div>
+  </section>
+
+  <section class="panel" id="admin-panel">
+    <div class="split">
+      <section class="card request-list">
+        <h2>Solicitações relacionadas</h2>
+        <div class="meta" id="request-count"></div>
+        <div id="requests"></div>
+      </section>
+      <section class="card request-detail" id="request-detail"></section>
+    </div>
+  </section>
+
+  <section class="panel" id="compare-panel">
+    <section class="card compare-card">
+      <div class="toolbar">
+        <div>
+          <h2>Antes / Solicitado / Analisado</h2>
+          <div class="meta">Selecione uma solicitação para comparar seus três estados.</div>
+        </div>
+        <select id="compare-request" class="compare-select" aria-label="Solicitação para comparar"></select>
+      </div>
+      <div id="comparison"></div>
+    </section>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+(async () => {
+  const HISTORY_DATABASE_VERSION = "20260729-1";
+  let db;
+  let item;
+  let events = [];
+  let groups = [];
+  let requests = [];
+  let selectedEventId = null;
+  let selectedRequestId = null;
+
+  const $ = selector => document.querySelector(selector);
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+  const params = new URLSearchParams(location.search);
+  const itemId = Number(params.get("item_id"));
+
+  function query(sql, bind = {}) {
+    const result = db.exec(sql, bind);
+    if (!result.length) return [];
+    const { columns, values } = result[0];
+    return values.map(row => Object.fromEntries(columns.map((column, index) => [column, row[index]])));
+  }
+
+  async function loadCompressedDbBytes(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Não foi possível carregar o banco histórico (${response.status}).`);
+    const gzipBytes = new Uint8Array(await response.arrayBuffer());
+    if ("DecompressionStream" in window) {
+      const stream = new Blob([gzipBytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return pako.ungzip(gzipBytes);
+  }
+
+  function formatDate(value) {
+    if (!value) return "Data não informada";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short"
+    });
+  }
+
+  function cleanDetails(value) {
+    return String(value || "").replace(/Ü+$/u, "").trim();
+  }
+
+  function eventCategory(event) {
+    if ([16, 17].includes(Number(event.action_code))) return "integration";
+    if ([2, 18].includes(Number(event.action_code))) return "status";
+    return "catalog";
+  }
+
+  function groupTitle(group) {
+    const labels = [...new Set(group.events.map(event => event.action_label))];
+    const codes = new Set(group.events.map(event => Number(event.action_code)));
+    if (codes.size === 1 && codes.has(14)) return `${group.events.length} unidades de aquisição inativadas`;
+    if (codes.size === 1 && codes.has(15)) return `${group.events.length} unidades de aquisição incluídas`;
+    if (codes.size === 1 && codes.has(12)) return `${group.events.length} unidades de serviço inativadas`;
+    if (codes.size === 1 && codes.has(13)) return `${group.events.length} linhas de fornecimento inativadas`;
+    if (labels.length === 1) return labels[0];
+    return "Alterações agrupadas";
+  }
+
+  function buildGroups(source) {
+    const result = [];
+    for (const event of source) {
+      const when = new Date(event.occurred_at);
+      const previous = result.at(-1);
+      const compatible = previous &&
+        Number(event.action_code) !== 1 &&
+        String(event.user_masp || "") === String(previous.user_masp || "") &&
+        when - previous.lastDate <= 5 * 60 * 1000;
+      if (compatible) {
+        previous.events.push(event);
+        previous.end_at = event.occurred_at;
+        previous.lastDate = when;
+      } else {
+        result.push({
+          id: `g-${event.history_id}`,
+          start_at: event.occurred_at,
+          end_at: event.occurred_at,
+          lastDate: when,
+          user_name: event.user_name,
+          user_masp: event.user_masp,
+          events: [event],
+        });
+      }
+    }
+    return result.map(group => ({ ...group, title: groupTitle(group) }));
+  }
+
+  function renderItem() {
+    const hasEvents = Number(item.event_count) > 0;
+    $("#item-card").innerHTML = `
+      <div class="item-top">
+        <div>
+          <div class="item-code">${esc(item.code || item.item_id)}</div>
+          <h2>${esc(item.material_service_name || "Item CATMAS")}</h2>
+          <p class="item-spec">${esc(item.current_specification || "Especificação não disponível.")}</p>
+          <div class="meta">
+            Material/serviço ${esc(item.material_service_code || "—")} ·
+            versão ${esc(item.current_version ?? "—")} ·
+            criado em ${esc(formatDate(item.created_at))}
+          </div>
+        </div>
+        <div class="badges">
+          <span class="badge brand">${esc(item.item_type || "CATMAS")}</span>
+          <span class="badge">${esc(item.current_status_label || (item.current_status_code != null ? `Situação ${item.current_status_code}` : "Situação não informada"))}</span>
+          <span class="badge ${hasEvents ? "ok" : "warn"}">${esc(item.event_count)} eventos</span>
+        </div>
+      </div>`;
+  }
+
+  function filteredTimelineRows() {
+    const filter = $("#event-filter").value;
+    const grouped = $("#group-events").checked;
+    if (grouped) {
+      return groups.filter(group => filter === "all" || group.events.some(event => eventCategory(event) === filter));
+    }
+    return events
+      .filter(event => filter === "all" || eventCategory(event) === filter)
+      .map(event => ({
+        id: `e-${event.history_id}`, start_at: event.occurred_at, end_at: event.occurred_at,
+        user_name: event.user_name, user_masp: event.user_masp,
+        title: event.action_label, events: [event]
+      }));
+  }
+
+  function renderTimeline() {
+    const rows = filteredTimelineRows().reverse();
+    if (!rows.some(row => row.id === selectedEventId)) selectedEventId = rows[0]?.id || null;
+    $("#timeline-count").textContent = `${rows.length.toLocaleString("pt-BR")} ${$("#group-events").checked ? "acontecimentos" : "registros"} exibidos`;
+    $("#timeline").innerHTML = rows.length ? rows.map(row => `
+      <button class="event-button ${row.id === selectedEventId ? "active" : ""}" data-event-id="${esc(row.id)}">
+        <span class="event-title"><span>${esc(row.title)}</span>${row.events.length > 1 ? `<span class="badge">${row.events.length}</span>` : ""}</span>
+        <span class="event-meta">${esc(formatDate(row.start_at))} · ${esc(row.user_name || "Processo automático")}</span>
+      </button>`).join("") : `<div class="empty">Este item não possui eventos nesta categoria.</div>`;
+    document.querySelectorAll("[data-event-id]").forEach(button => {
+      button.addEventListener("click", () => { selectedEventId = button.dataset.eventId; renderTimeline(); });
+    });
+    renderEventDetail(rows.find(row => row.id === selectedEventId));
+  }
+
+  function renderEventDetail(row) {
+    if (!row) {
+      $("#event-detail").innerHTML = `<div class="empty">Nenhum evento histórico disponível para este item.</div>`;
+      return;
+    }
+    const end = row.end_at !== row.start_at ? ` – ${formatDate(row.end_at)}` : "";
+    $("#event-detail").innerHTML = `
+      <div class="meta">${esc(formatDate(row.start_at))}${esc(end)}</div>
+      <h2 class="detail-title">${esc(row.title)}</h2>
+      <div>${esc(row.user_name || "Processo automático")}${row.user_masp ? ` · MASP ${esc(row.user_masp)}` : ""}</div>
+      <div class="detail-section">
+        <h3>Registros de origem</h3>
+        <ul class="raw-list">${row.events.map(event => `
+          <li><span class="raw-code">Ação ${esc(event.action_code)}</span> ${esc(cleanDetails(event.details) || event.action_label)}</li>`).join("")}
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Detalhes técnicos</h3>
+        <div class="meta">
+          IDs históricos: ${row.events.map(event => esc(event.history_id)).join(", ")} ·
+          Unidade administrativa: ${esc(row.events[0].unit_id ?? "—")} ·
+          ${row.events.some(event => Number(event.automatic)) ? "Evento automático" : "Operação manual"}
+        </div>
+      </div>`;
+  }
+
+  function loadRequests() {
+    requests = query(`
+      WITH relevant AS (
+        SELECT DISTINCT request_id,
+          CASE WHEN item_id = :item_id THEN 'Item' ELSE 'Material/serviço pai' END AS scope
+        FROM snapshots
+        WHERE item_id = :item_id
+           OR (item_id IS NULL AND :parent_id IS NOT NULL AND material_service_id = :parent_id)
+      )
+      SELECT r.*, rt.label AS type_label, rs.label AS status_label, relevant.scope,
+             COUNT(s.snapshot_id) AS stage_count
+      FROM relevant
+      JOIN requests r ON r.request_id = relevant.request_id
+      JOIN request_types rt ON rt.code = r.request_type
+      JOIN request_statuses rs ON rs.code = r.status
+      JOIN snapshots s ON s.request_id = r.request_id
+      GROUP BY r.request_id
+      ORDER BY r.included_at DESC, r.request_id DESC
+    `, { ":item_id": item.item_id, ":parent_id": item.material_service_id });
+    if (!requests.some(request => Number(request.request_id) === Number(selectedRequestId))) {
+      selectedRequestId = requests[0]?.request_id ?? null;
+    }
+  }
+
+  function requestBadgeClass(status) {
+    if ([4, 6].includes(Number(status))) return "ok";
+    if (Number(status) === 5) return "brand";
+    return "warn";
+  }
+
+  function renderRequests() {
+    $("#request-count").textContent = `${requests.length.toLocaleString("pt-BR")} solicitações encontradas`;
+    $("#requests").innerHTML = requests.length ? requests.map(request => `
+      <button class="request-button ${Number(request.request_id) === Number(selectedRequestId) ? "active" : ""}" data-request-id="${esc(request.request_id)}">
+        <span class="badge status ${requestBadgeClass(request.status)}">${esc(request.status_label)}</span>
+        <strong>Solicitação ${esc(request.code || request.request_id)}</strong>
+        <div class="event-meta">${esc(request.type_label)} · ${esc(formatDate(request.included_at))}</div>
+        <div class="event-meta">${esc(request.scope)}</div>
+      </button>`).join("") : `<div class="empty">Nenhuma solicitação administrativa foi relacionada a este item.</div>`;
+    document.querySelectorAll("[data-request-id]").forEach(button => {
+      button.addEventListener("click", () => {
+        selectedRequestId = Number(button.dataset.requestId);
+        renderRequests();
+        renderComparisonSelector();
+      });
+    });
+    renderRequestDetail(requests.find(request => Number(request.request_id) === Number(selectedRequestId)));
+  }
+
+  function renderRequestDetail(request) {
+    if (!request) {
+      $("#request-detail").innerHTML = `<div class="empty">Selecione uma solicitação para consultar sua tramitação.</div>`;
+      return;
+    }
+    const history = query(`
+      SELECT request_event_id, action_code, occurred_at, unit_id, user_masp, user_name, details
+      FROM request_events WHERE request_id = :request_id
+      ORDER BY occurred_at, request_event_id
+    `, { ":request_id": request.request_id });
+    $("#request-detail").innerHTML = `
+      <span class="badge ${requestBadgeClass(request.status)}">${esc(request.status_label)}</span>
+      <h2 class="detail-title">Solicitação ${esc(request.code || request.request_id)}</h2>
+      <div class="meta">${esc(request.type_label)} · ${esc(request.scope)}</div>
+      <div class="request-summary">
+        <div class="summary-box"><span>Incluída em</span><strong>${esc(formatDate(request.included_at))}</strong></div>
+        <div class="summary-box"><span>Responsável</span><strong>${esc(request.responsible_name || "Não informado")}</strong></div>
+        <div class="summary-box"><span>Estados disponíveis</span><strong>${esc(request.stage_count)} de 3</strong></div>
+      </div>
+      ${request.justification ? `<div class="detail-section"><h3>Justificativa do solicitante</h3><div>${esc(request.justification)}</div></div>` : ""}
+      ${request.analyst_justification ? `<div class="detail-section"><h3>Justificativa do analista</h3><div>${esc(request.analyst_justification)}</div></div>` : ""}
+      <div class="detail-section">
+        <h3>Tramitação</h3>
+        ${history.length ? `<ol class="request-flow">${history.map(event => `
+          <li>
+            <div class="flow-text">${esc(cleanDetails(event.details) || (Number(event.action_code) === 1 ? "Solicitação criada" : "Mudança de etapa"))}</div>
+            <div class="flow-meta">${esc(formatDate(event.occurred_at))} · ${esc(event.user_name || "Sistema")}${event.user_masp ? ` · MASP ${esc(event.user_masp)}` : ""}</div>
+          </li>`).join("")}</ol>` : `<div class="empty">Sem registros de tramitação.</div>`}
+      </div>`;
+  }
+
+  function renderComparisonSelector() {
+    const select = $("#compare-request");
+    select.innerHTML = requests.length ? requests.map(request => `
+      <option value="${esc(request.request_id)}" ${Number(request.request_id) === Number(selectedRequestId) ? "selected" : ""}>
+        ${esc(request.code || request.request_id)} — ${esc(request.type_label)} — ${esc(request.status_label)}
+      </option>`).join("") : `<option value="">Nenhuma solicitação relacionada</option>`;
+    select.disabled = !requests.length;
+    renderComparison();
+  }
+
+  function snapshotValue(snapshot, field) {
+    if (!snapshot) return null;
+    if (field === "item_status") return snapshot.item_status == null ? null : `Situação ${snapshot.item_status}`;
+    return snapshot[field] || null;
+  }
+
+  function compareRow(label, snapshotsByStage, field) {
+    const values = [1, 2, 3].map(stage => snapshotValue(snapshotsByStage.get(stage), field));
+    const different = new Set(values.map(value => value ?? "")).size > 1;
+    return `<div class="compare-cell compare-label">${esc(label)}</div>` +
+      values.map(value => `<div class="compare-cell ${different ? "changed" : ""} ${value == null ? "missing" : ""}">${value == null ? "Não informado" : esc(value)}</div>`).join("");
+  }
+
+  function componentSignature(value) {
+    if (!value) return "";
+    return [value.label, value.value, value.situation].map(part => part ?? "").join("|");
+  }
+
+  function situationLabel(code) {
+    if (code == null) return "";
+    if (Number(code) === 1) return "Ativo";
+    if (Number(code) === 2) return "Inativo";
+    return `Situação ${code}`;
+  }
+
+  function componentHtml(value, isDifferent) {
+    if (!value) return `<div class="compare-cell missing">Não presente</div>`;
+    const isNew = String(value.source_kind).startsWith("nova_") || String(value.source_kind).startsWith("novo_");
+    return `<div class="compare-cell ${isDifferent ? "changed" : ""}">
+      <div class="component-label">${esc(value.label)} ${isNew ? `<span class="badge brand">novo</span>` : ""}</div>
+      ${value.value ? `<div class="component-value">${esc(value.value)}</div>` : ""}
+      ${value.situation != null ? `<div class="component-state">${esc(situationLabel(value.situation))}</div>` : ""}
+      <div class="component-state">ID de origem ${esc(value.source_id ?? "—")}</div>
+    </div>`;
+  }
+
+  function renderComparison() {
+    const requestId = Number($("#compare-request").value || selectedRequestId);
+    if (!requestId) {
+      $("#comparison").innerHTML = `<div class="empty">Não há solicitação disponível para comparação.</div>`;
+      return;
+    }
+    selectedRequestId = requestId;
+    const request = requests.find(row => Number(row.request_id) === requestId);
+    const snapshots = query(`
+      SELECT s.*, stages.label AS stage_label
+      FROM snapshots s JOIN stages ON stages.code = s.stage
+      WHERE s.request_id = :request_id ORDER BY s.stage
+    `, { ":request_id": requestId });
+    const snapshotsByStage = new Map(snapshots.map(snapshot => [Number(snapshot.stage), snapshot]));
+    const snapshotIds = snapshots.map(snapshot => Number(snapshot.snapshot_id));
+    const components = snapshotIds.length ? query(`
+      SELECT * FROM snapshot_components
+      WHERE snapshot_id IN (${snapshotIds.map(() => "?").join(",")})
+      ORDER BY category, sort_order, component_row_id
+    `, snapshotIds) : [];
+    const stageBySnapshot = new Map(snapshots.map(snapshot => [Number(snapshot.snapshot_id), Number(snapshot.stage)]));
+    const categories = new Map();
+    for (const value of components) {
+      if (!categories.has(value.category)) categories.set(value.category, new Map());
+      const keys = categories.get(value.category);
+      if (!keys.has(value.component_key)) keys.set(value.component_key, new Map());
+      keys.get(value.component_key).set(stageBySnapshot.get(Number(value.snapshot_id)), value);
+    }
+    let html = "";
+    if (!snapshotsByStage.has(3)) {
+      html += `<div class="notice">Esta solicitação ainda não chegou à análise. O estado “Analisado” não está disponível.</div>`;
+    } else if (request && Number(request.status) === 5) {
+      html += `<div class="notice">A solicitação foi reprovada. O conteúdo analisado não foi aplicado ao catálogo.</div>`;
+    } else if (request && Number(request.status) === 6) {
+      html += `<div class="notice">A solicitação foi aprovada parcialmente. A aplicação deve ser interpretada componente a componente.</div>`;
+    }
+    html += `<div class="compare-grid">
+      <div class="compare-cell compare-head">Campo</div>
+      <div class="compare-cell compare-head">Antes</div>
+      <div class="compare-cell compare-head">Solicitado</div>
+      <div class="compare-cell compare-head">Analisado</div>
+      ${compareRow("Especificação", snapshotsByStage, "specification")}
+      ${compareRow("Complementação", snapshotsByStage, "specification_complement")}
+      ${compareRow("Situação do item", snapshotsByStage, "item_status")}
+    </div>`;
+    if (categories.size) {
+      html += `<div class="compare-components">`;
+      for (const [category, keys] of categories) {
+        html += `<h3>${esc(category)}</h3><div class="compare-grid">
+          <div class="compare-cell compare-head">Componente</div>
+          <div class="compare-cell compare-head">Antes</div>
+          <div class="compare-cell compare-head">Solicitado</div>
+          <div class="compare-cell compare-head">Analisado</div>`;
+        for (const stages of keys.values()) {
+          const stageValues = [stages.get(1), stages.get(2), stages.get(3)];
+          const label = stageValues.find(Boolean)?.label || "Componente";
+          const different = new Set(stageValues.map(componentSignature)).size > 1;
+          html += `<div class="compare-cell compare-label">${esc(label)}</div>` +
+            stageValues.map(value => componentHtml(value, different)).join("");
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += `<div class="empty">Esta solicitação não possui componentes relacionais adicionais.</div>`;
+    }
+    $("#comparison").innerHTML = html;
+  }
+
+  try {
+    if (!Number.isInteger(itemId) || itemId <= 0) throw new Error("O item não foi informado no endereço.");
+    const SQL = await initSqlJs({ locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${file}` });
+    const bytes = await loadCompressedDbBytes(`history.db.gz?v=${HISTORY_DATABASE_VERSION}`);
+    db = new SQL.Database(bytes);
+    item = query("SELECT * FROM items WHERE item_id = :item_id", { ":item_id": itemId })[0];
+    if (!item) throw new Error("Item não encontrado no banco histórico.");
+    events = query(`
+      SELECT e.*, action_labels.label AS action_label
+      FROM events e JOIN action_labels ON action_labels.code = e.action_code
+      WHERE e.item_id = :item_id ORDER BY e.occurred_at, e.history_id
+    `, { ":item_id": itemId });
+    groups = buildGroups(events);
+    loadRequests();
+    renderItem();
+    renderTimeline();
+    renderRequests();
+    renderComparisonSelector();
+    $("#loading").style.display = "none";
+    $("#app").style.display = "block";
+  } catch (error) {
+    $("#loading").innerHTML = `<div class="error"><strong>Não foi possível abrir o histórico.</strong><br>${esc(error.message)}</div>`;
+    console.error(error);
+  }
+
+  $(".tabs").addEventListener("click", event => {
+    const button = event.target.closest("button[data-panel]");
+    if (!button) return;
+    document.querySelectorAll(".tabs button").forEach(tab => tab.classList.toggle("active", tab === button));
+    document.querySelectorAll(".panel").forEach(panel => panel.classList.toggle("active", panel.id === button.dataset.panel));
+  });
+  $("#event-filter").addEventListener("change", renderTimeline);
+  $("#group-events").addEventListener("change", renderTimeline);
+  $("#compare-request").addEventListener("change", () => {
+    selectedRequestId = Number($("#compare-request").value);
+    renderComparison();
+  });
+})();
+</script>
+</body>
+</html>
