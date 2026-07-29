@@ -6,6 +6,7 @@ Brazilian government procurement teams need to browse and search the CATMAS cata
 ## User needs
 - Filter catalog items by tipo (Material/Serviço), grupo, classe, código, and nome
 - Filter by situação (Ativo / Suspenso para compra), agricultura familiar (Sim/Não), sustentável (Sim/Não)
+- Filter items that explicitly reference an attached long specification
 - Cascading filters: tipo → grupo → classe
 - Paginated results (manageable page sizes)
 - Deployable as a static site (GitHub Pages)

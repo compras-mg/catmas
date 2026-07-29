@@ -12,7 +12,7 @@
 | `justfile` | Recipes: `load`, `transform`, `serve`, `tables`, `schema` |
 
 ## Indexes on items table
-- idx_tipo, idx_grupo, idx_classe, idx_codigo
+- idx_tipo, idx_grupo, idx_classe, idx_codigo, idx_especificacao_longa
 - idx_composite (tipo, grupo, classe)
 - items_fts: FTS5 virtual table indexing spec, material_nome, grupo_label, classe_label with `unicode61 remove_diacritics 2` tokenizer
 
@@ -25,6 +25,9 @@
 - `just serve` — starts local HTTP server on port 8000
 
 ## Changelog
+- Added the "Itens com Especificação Longa" filter. The transform normalizes
+  `complementacaoespecificacao`, recognizes singular/plural and recurring spelling
+  variants, and publishes the result as the indexed `especificacao_longa` flag.
 - Renamed transform script from `build_db.py` to `scripts/transform.py` and moved it under `scripts/`
 - Added gzip stop-gap deployment flow for GitHub Pages limits:
   - `scripts/transform.py` now writes `site/data.db.gz` (gzip level 9) after building/vacuuming `site/data.db`
