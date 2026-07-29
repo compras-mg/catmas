@@ -200,6 +200,15 @@
       </div>
 
       <div class="filter-group">
+        <label>Itens com Especifica&ccedil;&atilde;o Longa</label>
+        <ul id="filter-especificacao-longa" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
         <label for="natureza">Natureza de Despesa</label>
         <select id="natureza" multiple placeholder="Buscar natureza..."></select>
         <div id="natureza-facets" class="facet-list"></div>
@@ -326,7 +335,7 @@
 
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260721-4");
+  const dbBytes = await loadCompressedDbBytes("data.db.gz?v=20260729-1");
   db = new SQL.Database(dbBytes);
 
   // Pre-load hierarchy for cascading dropdowns
@@ -352,6 +361,7 @@
   const filterAgriFam    = document.getElementById("filter-agrifam");
   const filterSustentavel = document.getElementById("filter-sustentavel");
   const filterRegistroPrecos = document.getElementById("filter-registro-precos");
+  const filterEspecificacaoLonga = document.getElementById("filter-especificacao-longa");
   const naturezaFacets = document.getElementById("natureza-facets");
   const linhasFacets   = document.getElementById("linhas-facets");
   const materialFacets = document.getElementById("material-facets");
@@ -434,6 +444,7 @@
       agriFam:     getAdminFilterValue(filterAgriFam),
       sustentavel: getAdminFilterValue(filterSustentavel),
       registroPrecos: getAdminFilterValue(filterRegistroPrecos),
+      especificacaoLonga: getAdminFilterValue(filterEspecificacaoLonga),
       naturezas:   tsNatureza.getValue(),
       linhas:      tsLinhas.getValue(),
       materiais:   tsMaterial.getValue(),
@@ -480,6 +491,8 @@
       if (f.registroPrecos === "__empty__") clauses.push("ok_registro_precos = ''");
       else { clauses.push("ok_registro_precos = :rp0"); params[":rp0"] = f.registroPrecos; }
     }
+    if (exclude !== "especificacao_longa" && f.especificacaoLonga)
+      { clauses.push("especificacao_longa = :el0"); params[":el0"] = f.especificacaoLonga; }
     if (exclude !== "natureza" && f.naturezas.length)
       clauses.push(inClause("natureza", f.naturezas, "n", params));
     if (exclude !== "linhas_fornecimento" && f.linhas.length)
@@ -886,12 +899,12 @@
 
   function hasActiveFilters() {
     const f = getFilters();
-    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.registroPrecos || f.naturezas.length ||
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.registroPrecos || f.especificacaoLonga || f.naturezas.length ||
       f.linhas.length || f.materiais.length || f.elementos.length || f.grupos.length || f.classes.length;
   }
 
   function resetAllFilters() {
-    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos]) {
+    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
       ul.querySelector("li.active")?.classList.remove("active");
       ul.querySelector('li[data-value=""]').classList.add("active");
     }
@@ -913,6 +926,7 @@
     updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
     updateAdminFilterCounts(filterSustentavel, "sustentavel");
     updateAdminFilterCounts(filterRegistroPrecos, "ok_registro_precos");
+    updateAdminFilterCounts(filterEspecificacaoLonga, "especificacao_longa");
     populateSimpleFacet("natureza", tsNatureza, naturezaFacets);
     populateSimpleFacet("linhas_fornecimento", tsLinhas, linhasFacets);
     populateMateriais();
@@ -933,7 +947,7 @@
   }
 
   // Event listeners
-  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos]) {
+  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
     ul.addEventListener("click", e => {
       const li = e.target.closest("li");
       if (!li) return;
