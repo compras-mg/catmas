@@ -9,7 +9,7 @@ For deployment on GitHub Pages, the app fetches `site/data.db.gz` and decompress
 Serve a slim SQLite database artifact as `site/data.db.gz`, decompress in-browser, and query it client-side using sql.js. This gives real SQL WHERE/LIMIT/OFFSET without a backend.
 
 ## Data model
-- **items** table: tipo, grupo (short code), classe (short code), codigo, spec (especificacaoCompleta), situacao, natureza, material_codigo, material_nome, agricultura_familiar, sustentavel — 201,785 rows
+- **items** table: tipo, grupo (short code), classe (short code), codigo, spec (especificacaoCompleta), situacao, natureza, material_codigo, material_nome, agricultura_familiar, sustentavel, especificacao_longa
 - **items_fts** FTS5 virtual table: spec, material_nome, grupo_label, classe_label — tokenized with `unicode61 remove_diacritics 2` for accent-insensitive Portuguese search. Rowids match items table. Grupo/classe stored as full labels for searchability.
 - **hierarchy** table: tipo, grupo (full label), classe (full label) — 831 rows for populating cascading dropdowns
 - Grupo/classe stored as short codes in items to reduce DB size
@@ -31,6 +31,7 @@ Serve a slim SQLite database artifact as `site/data.db.gz`, decompress in-browse
 | situacao | 2 | Django-admin-style list: Todos / Ativo / Suspenso para compra (single-select, Todos = no filter) |
 | agricultura_familiar | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
 | sustentavel | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
+| especificacao_longa | 2 | Django-admin-style list: Todos / Sim / Não (single-select) |
 | grupo | 85 | Tom Select search + visible facet list sorted by count desc (cascaded from tipo) |
 | classe | 831 | Tom Select search + visible facet list sorted by count desc (cascaded from grupo) |
 | spec (especificacaoCompleta) | 201,785 | Text input with FTS5 MATCH (searches spec, material name, grupo label, classe label) |

@@ -2,7 +2,9 @@
 
 import gzip
 import os
+import re
 import sqlite3
+import unicodedata
 
 SRC = os.path.join("data-raw", "data.db")
 DEST = os.path.join("site", "data.db")
@@ -28,6 +30,23 @@ def normalize_situacao(value):
 def normalize_bool(value):
     value = (value or "").strip().lower()
     return value if value in {"true", "false"} else ""
+
+
+def has_long_specification(value):
+    """Identify items whose complement explicitly points to a long specification."""
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"\s+", " ", text).strip().upper()
+    explicit_specification = re.search(
+        r"\b(?:ESPECIFICAC(?:AO|A|O|OES)|ESPECIFICAO|ESPEIFICACAO|ESEPCIFICACAO)"
+        r"\s+LONGAS?\b",
+        text,
+    )
+    explicit_attachment = re.search(
+        r"\b(?:ARQUIVO\s+DE\s+)?LONGA\s+ANEXAD[AO]\b",
+        text,
+    )
+    return "true" if explicit_specification or explicit_attachment else "false"
 
 
 def main():
@@ -57,6 +76,7 @@ def main():
             agricultura_familiar TEXT NOT NULL,
             sustentavel         TEXT NOT NULL,
             ok_registro_precos  TEXT NOT NULL,
+            especificacao_longa TEXT NOT NULL,
             versao              INTEGER,
             data_criacao        TEXT NOT NULL,
             data_ultima_atualizacao TEXT NOT NULL,
@@ -88,6 +108,7 @@ def main():
             COALESCE(ehagriculturafamiliar, 'false'),
             COALESCE(sustentavel, 'false'),
             espokregprecos,
+            complementacaoespecificacao,
             versao,
             COALESCE(datacriacao, dataCriacao, ''),
             COALESCE(dataultimaatualizacao, dataUltimaAtualizacao, datacriacao, dataCriacao, ''),
@@ -104,14 +125,16 @@ def main():
          spec or "", normalize_situacao(situacao), natureza or "", linhas_fornec or "", elementos_codigos or "",
          mat_codigo or "", mat_nome or "",
          agri_fam or "false", sust or "false", normalize_bool(ok_registro_precos),
+         has_long_specification(complementacao_especificacao),
          versao, data_criacao or "", data_ultima_atualizacao or "",
          item_id, servico_id)
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
-            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, versao, data_criacao, data_ultima_atualizacao,
+            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, complementacao_especificacao,
+            versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
@@ -139,6 +162,7 @@ def main():
     dst.execute("CREATE INDEX idx_grupo  ON items(grupo)")
     dst.execute("CREATE INDEX idx_classe ON items(classe)")
     dst.execute("CREATE INDEX idx_codigo ON items(codigo)")
+    dst.execute("CREATE INDEX idx_especificacao_longa ON items(especificacao_longa)")
     dst.execute("CREATE INDEX idx_composite ON items(tipo, grupo, classe)")
 
     # FTS5 full-text search index on code, spec, material name, grupo label, classe label
@@ -152,7 +176,8 @@ def main():
     fts_rows = [
         (codigo or "", spec or "", mat_nome or "", grupo or "", classe or "")
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
-            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, versao, data_criacao, data_ultima_atualizacao,
+            mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, complementacao_especificacao,
+            versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
     dst.executemany(
