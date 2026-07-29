@@ -10,5 +10,8 @@ schema:
 transform:
     uv run python scripts/transform.py
 
+history ZIP:
+    uv run python scripts/build_history.py {{ZIP}}
+
 serve:
     cd site && python3 -m http.server 8000

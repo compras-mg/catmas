@@ -1,5 +1,8 @@
 data-raw/
 site/data.db
 site/data.db.gz
+site/history.db
+site/history.db.gz
 *.pdf
 node_modules/
+__pycache__/
