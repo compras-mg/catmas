@@ -269,6 +269,43 @@
     return "catalog";
   }
 
+  function timelineTimestamp(value) {
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
+  }
+
+  function prepareTimelineEvents(source) {
+    const prepared = source.map(event => ({ ...event }));
+    const creation = prepared.find(event => Number(event.action_code) === 1);
+    if (creation) {
+      if (item.created_at) creation.occurred_at = item.created_at;
+    } else {
+      prepared.push({
+        history_id: `creation-${item.item_id}`,
+        item_id: item.item_id,
+        occurred_at: item.created_at || null,
+        action_code: 1,
+        action_label: "Criação do item",
+        resulting_status_code: null,
+        automatic: 1,
+        unit_id: null,
+        user_name: null,
+        user_masp: null,
+        details: item.created_at
+          ? "Data de criação registrada no catálogo."
+          : "A data de criação não foi informada na fonte.",
+        synthetic: true,
+      });
+    }
+    return prepared.sort((left, right) => {
+      const leftIsCreation = Number(left.action_code) === 1;
+      const rightIsCreation = Number(right.action_code) === 1;
+      if (leftIsCreation !== rightIsCreation) return leftIsCreation ? -1 : 1;
+      return timelineTimestamp(left.occurred_at) - timelineTimestamp(right.occurred_at) ||
+        String(left.history_id).localeCompare(String(right.history_id), "pt-BR", { numeric: true });
+    });
+  }
+
   function groupTitle(group) {
     const labels = [...new Set(group.events.map(event => event.action_label))];
     const codes = new Set(group.events.map(event => Number(event.action_code)));
@@ -287,6 +324,7 @@
       const previous = result.at(-1);
       const compatible = previous &&
         Number(event.action_code) !== 1 &&
+        !previous.events.some(previousEvent => Number(previousEvent.action_code) === 1) &&
         String(event.user_masp || "") === String(previous.user_masp || "") &&
         when - previous.lastDate <= 5 * 60 * 1000;
       if (compatible) {
@@ -334,10 +372,18 @@
     const filter = $("#event-filter").value;
     const grouped = $("#group-events").checked;
     if (grouped) {
-      return groups.filter(group => filter === "all" || group.events.some(event => eventCategory(event) === filter));
+      return groups.filter(group =>
+        group.events.some(event => Number(event.action_code) === 1) ||
+        filter === "all" ||
+        group.events.some(event => eventCategory(event) === filter)
+      );
     }
     return events
-      .filter(event => filter === "all" || eventCategory(event) === filter)
+      .filter(event =>
+        Number(event.action_code) === 1 ||
+        filter === "all" ||
+        eventCategory(event) === filter
+      )
       .map(event => ({
         id: `e-${event.history_id}`, start_at: event.occurred_at, end_at: event.occurred_at,
         user_name: event.user_name, user_masp: event.user_masp,
@@ -366,6 +412,9 @@
       return;
     }
     const end = row.end_at !== row.start_at ? ` – ${formatDate(row.end_at)}` : "";
+    const sourceIds = row.events
+      .filter(event => !event.synthetic)
+      .map(event => esc(event.history_id));
     $("#event-detail").innerHTML = `
       <div class="meta">${esc(formatDate(row.start_at))}${esc(end)}</div>
       <h2 class="detail-title">${esc(row.title)}</h2>
@@ -379,7 +428,7 @@
       <div class="detail-section">
         <h3>Detalhes técnicos</h3>
         <div class="meta">
-          IDs históricos: ${row.events.map(event => esc(event.history_id)).join(", ")} ·
+          IDs históricos: ${sourceIds.length ? sourceIds.join(", ") : "não se aplica ao marco inicial"} ·
           Unidade administrativa: ${esc(row.events[0].unit_id ?? "—")} ·
           ${row.events.some(event => Number(event.automatic)) ? "Evento automático" : "Operação manual"}
         </div>
@@ -593,6 +642,7 @@
       FROM events e JOIN action_labels ON action_labels.code = e.action_code
       WHERE e.item_id = :item_id ORDER BY e.occurred_at, e.history_id
     `, { ":item_id": itemId });
+    events = prepareTimelineEvents(events);
     groups = buildGroups(events);
     loadRequests();
     renderItem();
