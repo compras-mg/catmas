@@ -126,6 +126,17 @@
   }
   .request-flow li:last-child::after { display: none; }
   .flow-text { font-weight: 600; color: var(--blue); }
+  .flow-system {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .3rem;
+    margin-top: .25rem; color: #455d69; font-size: .8rem;
+  }
+  .flow-system span { color: var(--muted); text-transform: uppercase; font-size: .68rem; letter-spacing: .03em; }
+  .flow-system strong { color: var(--blue); }
+  .flow-observation {
+    max-width: 900px; margin-top: .25rem; padding: .45rem .55rem;
+    border-left: 3px solid #ccd6db; background: #f7f9fa; color: #455d69;
+    font-size: .8rem; line-height: 1.4; overflow-wrap: anywhere;
+  }
   .flow-meta { color: var(--muted); font-size: .75rem; margin-top: .15rem; }
   .compare-select { min-width: min(100%, 520px); }
   .notice { padding: .75rem .85rem; border-radius: 4px; background: var(--warn-soft); color: #6f4b08; font-size: .85rem; margin: .75rem 0; }
@@ -261,6 +272,77 @@
 
   function cleanDetails(value) {
     return String(value || "").replace(/Ü+$/u, "").trim();
+  }
+
+  const REQUEST_FLOW_STAGES = [
+    "Aprovada parcialmente",
+    "Aguardando análise",
+    "Em análise",
+    "Aprovada",
+    "Reprovada",
+    "Gerada",
+  ];
+
+  const INTEGRATION_OPERATIONS = [
+    { pattern: /^ALTERACAO DE ITEM DE MATERIAL\b\s*/i, label: "Alteração de item de material" },
+    { pattern: /^ALTERACAO DO MATERIAL\b\s*/i, label: "Alteração do material" },
+    { pattern: /^ALTERACAO DE ITEM SERVICO\b\s*/i, label: "Alteração de item de serviço" },
+    { pattern: /^ALTERACAO DO SERVICO\b\s*/i, label: "Alteração do serviço" },
+  ];
+
+  function parseRequestEventDetails(value, actionCode) {
+    const details = cleanDetails(value).replace(/\s+/g, " ");
+    const matchedStage = REQUEST_FLOW_STAGES.find(stage =>
+      details === stage || details.startsWith(`${stage} `)
+    );
+    const stage = matchedStage ||
+      (Number(actionCode) === 1 ? "Solicitação criada" : "Mudança de etapa");
+    const remainder = matchedStage ? details.slice(matchedStage.length).trim() : details;
+    const communication = remainder.match(
+      /^Status da última comunicação:\s*(.*?)(?:\s+Observações:\s*(.*))?$/i
+    );
+    if (!communication) {
+      return {
+        stage,
+        communicationStatus: null,
+        responseCode: null,
+        operation: null,
+        observation: remainder || null,
+      };
+    }
+
+    const communicationStatus = communication[1]?.trim() || "Não informado";
+    let observation = communication[2]?.trim() || null;
+    if (observation && /^(?:null|não informado)$/i.test(observation)) observation = null;
+
+    let responseCode = null;
+    if (observation) {
+      const code = observation.match(/^([0-9A-Z]{3})\s+(.+)$/i);
+      if (code) {
+        responseCode = code[1];
+        observation = code[2].trim();
+      }
+    }
+
+    let operation = null;
+    if (observation) {
+      const knownOperation = INTEGRATION_OPERATIONS.find(candidate =>
+        candidate.pattern.test(observation)
+      );
+      if (knownOperation) {
+        operation = knownOperation.label;
+        observation = observation.replace(knownOperation.pattern, "").trim() || null;
+      }
+    }
+    if (
+      operation &&
+      observation &&
+      /^.*\b(?:executada|efetuado)\s+com\s+sucesso\.?$/i.test(observation)
+    ) {
+      observation = "Executada com sucesso.";
+    }
+
+    return { stage, communicationStatus, responseCode, operation, observation };
   }
 
   function eventCategory(event) {
@@ -465,6 +547,27 @@
     return "warn";
   }
 
+  function renderRequestFlowEvent(event) {
+    const parsed = parseRequestEventDetails(event.details, event.action_code);
+    const integration = parsed.communicationStatus ? `
+      <div class="flow-system">
+        <span>Comunicação</span><strong>${esc(parsed.communicationStatus)}</strong>
+        ${parsed.responseCode ? ` · <span>Retorno</span><strong>${esc(parsed.responseCode)}</strong>` : ""}
+      </div>` : "";
+    const observation = parsed.operation || parsed.observation ? `
+      <div class="flow-observation">
+        ${parsed.operation ? `<strong>${esc(parsed.operation)}</strong>${parsed.observation ? " — " : ""}` : ""}
+        ${parsed.observation ? esc(parsed.observation) : ""}
+      </div>` : "";
+    return `
+      <li>
+        <div class="flow-text">${esc(parsed.stage)}</div>
+        ${integration}
+        ${observation}
+        <div class="flow-meta">${esc(formatDate(event.occurred_at))} · ${esc(event.user_name || "Sistema")}${event.user_masp ? ` · MASP ${esc(event.user_masp)}` : ""}</div>
+      </li>`;
+  }
+
   function renderRequests() {
     $("#request-count").textContent = `${requests.length.toLocaleString("pt-BR")} solicitações encontradas`;
     $("#requests").innerHTML = requests.length ? requests.map(request => `
@@ -507,11 +610,7 @@
       ${request.analyst_justification ? `<div class="detail-section"><h3>Justificativa do analista</h3><div>${esc(request.analyst_justification)}</div></div>` : ""}
       <div class="detail-section">
         <h3>Tramitação</h3>
-        ${history.length ? `<ol class="request-flow">${history.map(event => `
-          <li>
-            <div class="flow-text">${esc(cleanDetails(event.details) || (Number(event.action_code) === 1 ? "Solicitação criada" : "Mudança de etapa"))}</div>
-            <div class="flow-meta">${esc(formatDate(event.occurred_at))} · ${esc(event.user_name || "Sistema")}${event.user_masp ? ` · MASP ${esc(event.user_masp)}` : ""}</div>
-          </li>`).join("")}</ol>` : `<div class="empty">Sem registros de tramitação.</div>`}
+        ${history.length ? `<ol class="request-flow">${history.map(renderRequestFlowEvent).join("")}</ol>` : `<div class="empty">Sem registros de tramitação.</div>`}
       </div>`;
   }
 
