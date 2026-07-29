@@ -309,6 +309,7 @@
 (async () => {
   const PAGE_SIZE = 50;
   const DATABASE_UPDATED_AT = "2026-07-16T17:42:00-03:00";
+  const HISTORY_PAGE_VERSION = "20260729-3";
   let db, hierarchy, page = 0;
   let updating = false; // guard against cascading onChange during facet updates
 
@@ -807,7 +808,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
-        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}" class="history-link">Ver hist&oacute;rico</a></td>
+        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}" class="history-link">Ver hist&oacute;rico</a></td>
         <td class="spec col-spec">${esc(spec)}</td>
         <td class="col-situacao">${esc(situacao)}</td>
         <td class="col-natureza">${esc(natureza)}</td>
