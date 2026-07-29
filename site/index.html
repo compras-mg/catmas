@@ -124,6 +124,16 @@
 
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
+  .sort-button {
+    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0;
+    border: 0; background: transparent; color: inherit; cursor: pointer;
+    font: inherit; font-weight: 700; text-transform: inherit; white-space: nowrap;
+  }
+  .sort-button:hover, .sort-button:focus-visible { color: #be1e2d; }
+  .sort-button:focus-visible { outline: 2px solid #be1e2d; outline-offset: 3px; border-radius: 2px; }
+  .sort-indicator { min-width: 0.8rem; color: #6f7f87; font-size: 0.9rem; text-align: center; }
+  th[aria-sort="ascending"] .sort-indicator,
+  th[aria-sort="descending"] .sort-indicator { color: #be1e2d; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
   tr:hover td { background: #f8f9fa; }
   td.spec, td.material { max-width: 400px; word-break: break-word; }
@@ -279,19 +289,19 @@
     <table>
     <thead>
       <tr>
-        <th class="col-codigo">C&oacute;digo</th>
+        <th class="col-codigo" data-sort-col="codigo" aria-sort="none"><button class="sort-button" type="button" data-sort="codigo">C&oacute;digo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-spec" data-sort-col="spec" aria-sort="none"><button class="sort-button" type="button" data-sort="spec">Especifica&ccedil;&atilde;o do item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-situacao" data-sort-col="situacao" aria-sort="none"><button class="sort-button" type="button" data-sort="situacao">Situa&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-natureza" data-sort-col="natureza" aria-sort="none"><button class="sort-button" type="button" data-sort="natureza">Natureza de Despesa <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-elementos-codigos" data-sort-col="elementos_codigos" aria-sort="none"><button class="sort-button" type="button" data-sort="elementos_codigos">Elemento-Item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-linhas" data-sort-col="linhas" aria-sort="none"><button class="sort-button" type="button" data-sort="linhas">Linhas de Fornecimento <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-material" data-sort-col="material" aria-sort="none"><button class="sort-button" type="button" data-sort="material">Material/Servi&ccedil;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-classe" data-sort-col="classe" aria-sort="none"><button class="sort-button" type="button" data-sort="classe">Classe <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-grupo" data-sort-col="grupo" aria-sort="none"><button class="sort-button" type="button" data-sort="grupo">Grupo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-data-atualizacao" data-sort-col="data_atualizacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_atualizacao">&Uacute;ltima atualiza&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-versao" data-sort-col="versao" aria-sort="none"><button class="sort-button" type="button" data-sort="versao">Vers&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-data-criacao" data-sort-col="data_criacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_criacao">Data de cria&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
         <th class="col-historico">Hist&oacute;rico</th>
-        <th class="col-spec">Especifica&ccedil;&atilde;o do item</th>
-        <th class="col-situacao">Situa&ccedil;&atilde;o</th>
-        <th class="col-natureza">Natureza de Despesa</th>
-        <th class="col-elementos-codigos">Elemento-Item</th>
-        <th class="col-linhas">Linhas de Fornecimento</th>
-        <th class="col-material">Material/Servi&ccedil;o</th>
-        <th class="col-classe">Classe</th>
-        <th class="col-grupo">Grupo</th>
-        <th class="col-data-atualizacao">&Uacute;ltima atualiza&ccedil;&atilde;o</th>
-        <th class="col-versao">Vers&atilde;o</th>
-        <th class="col-data-criacao">Data de cria&ccedil;&atilde;o</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -309,8 +319,24 @@
 (async () => {
   const PAGE_SIZE = 50;
   const DATABASE_UPDATED_AT = "2026-07-16T17:42:00-03:00";
-  const HISTORY_PAGE_VERSION = "20260729-3";
+  const HISTORY_PAGE_VERSION = "20260729-4";
+  const SORT_COLUMNS = Object.freeze({
+    codigo: "codigo COLLATE NOCASE",
+    spec: "spec COLLATE NOCASE",
+    situacao: "situacao COLLATE NOCASE",
+    natureza: "natureza COLLATE NOCASE",
+    elementos_codigos: "elementos_codigos COLLATE NOCASE",
+    linhas: "linhas_fornecimento COLLATE NOCASE",
+    material: "material_nome COLLATE NOCASE",
+    classe: "classe COLLATE NOCASE",
+    grupo: "grupo COLLATE NOCASE",
+    data_atualizacao: "data_ultima_atualizacao",
+    versao: "versao",
+    data_criacao: "data_criacao",
+  });
   let db, hierarchy, page = 0;
+  let sortKey = null;
+  let sortDirection = "asc";
   let updating = false; // guard against cascading onChange during facet updates
 
   async function loadCompressedDbBytes(url) {
@@ -390,6 +416,7 @@
   const clearFiltersBtn = document.getElementById("clear-filters");
   const searchClearBtn  = document.getElementById("search-clear");
   const appEl = document.getElementById("app");
+  const tableHead = document.querySelector("thead");
 
   // Initialize Tom Select on grupo and classe (multi-select)
   const tsGrupo = new TomSelect("#grupo", {
@@ -774,10 +801,15 @@
       return { sql: "SELECT COUNT(*) FROM items" + where, params };
     }
     const f = getFilters();
-    const order = f.spec
-      ? "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid)"
-      : "ORDER BY codigo";
-    if (f.spec) params[":fts_rank"] = ftsQuery(f.spec);
+    let order;
+    if (sortKey) {
+      order = `ORDER BY ${SORT_COLUMNS[sortKey]} ${sortDirection.toUpperCase()}, item_id ASC`;
+    } else if (f.spec) {
+      order = "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid), item_id ASC";
+      params[":fts_rank"] = ftsQuery(f.spec);
+    } else {
+      order = "ORDER BY codigo COLLATE NOCASE ASC, item_id ASC";
+    }
     return {
       sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
@@ -808,7 +840,6 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
-        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}" class="history-link">Ver hist&oacute;rico</a></td>
         <td class="spec col-spec">${esc(spec)}</td>
         <td class="col-situacao">${esc(situacao)}</td>
         <td class="col-natureza">${esc(natureza)}</td>
@@ -820,6 +851,7 @@
         <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
         <td class="col-versao">${esc(versao)}</td>
         <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
+        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}" class="history-link">Ver hist&oacute;rico</a></td>
       `;
       tbody.appendChild(tr);
     }
@@ -972,9 +1004,38 @@
   prevBtn.addEventListener("click", () => { page--; query(); });
   nextBtn.addEventListener("click", () => { page++; query(); });
 
+  function updateSortHeaders() {
+    tableHead.querySelectorAll("th[data-sort-col]").forEach(header => {
+      const active = header.dataset.sortCol === sortKey;
+      const direction = active ? sortDirection : null;
+      header.setAttribute("aria-sort", direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none");
+      header.querySelector(".sort-indicator").textContent = direction === "asc" ? "▲" : direction === "desc" ? "▼" : "↕";
+      const button = header.querySelector(".sort-button");
+      const label = button.textContent.replace(/[▲▼↕]/g, "").trim();
+      button.setAttribute("aria-label", active
+        ? `${label}: ordem ${direction === "asc" ? "crescente" : "decrescente"}. Clique para inverter.`
+        : `Ordenar por ${label}`);
+    });
+  }
+
+  tableHead.addEventListener("click", event => {
+    const button = event.target.closest("button[data-sort]");
+    if (!button) return;
+    const nextKey = button.dataset.sort;
+    if (!Object.prototype.hasOwnProperty.call(SORT_COLUMNS, nextKey)) return;
+    if (sortKey === nextKey) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+    else {
+      sortKey = nextKey;
+      sortDirection = "asc";
+    }
+    page = 0;
+    updateSortHeaders();
+    query();
+  });
+  updateSortHeaders();
+
   const columns = [
     { key: "codigo", label: "Codigo", cls: "col-codigo" },
-    { key: "historico", label: "Historico", cls: "col-historico" },
     { key: "spec", label: "Especificacao do item", cls: "col-spec" },
     { key: "situacao", label: "Situacao", cls: "col-situacao" },
     { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },
@@ -986,6 +1047,7 @@
     { key: "data_atualizacao", label: "Ultima atualizacao", cls: "col-data-atualizacao" },
     { key: "versao", label: "Versao", cls: "col-versao" },
     { key: "data_criacao", label: "Data de criacao", cls: "col-data-criacao" },
+    { key: "historico", label: "Historico", cls: "col-historico" },
   ];
 
   function loadHiddenCols() {
