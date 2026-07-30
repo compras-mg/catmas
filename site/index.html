@@ -319,8 +319,10 @@
 (async () => {
   const PAGE_SIZE = 50;
   const DATABASE_UPDATED_AT = "2026-07-16T17:42:00-03:00";
-  const HISTORY_PAGE_VERSION = "20260730-1";
-  const HISTORY_ENABLED = new URLSearchParams(location.search).get("historico") === "1";
+  const HISTORY_PAGE_VERSION = "20260730-2";
+  const PAGE_PARAMS = new URLSearchParams(location.search);
+  const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
+  const HISTORY_EVALUATION = PAGE_PARAMS.get("avaliacao") === "escopos-v1";
   const SORT_COLUMNS = Object.freeze({
     codigo: "codigo COLLATE NOCASE",
     spec: "spec COLLATE NOCASE",
@@ -854,7 +856,7 @@
         <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
         <td class="col-versao">${esc(versao)}</td>
         <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
-        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&origem=historico" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
+        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
       `;
       tbody.appendChild(tr);
     }

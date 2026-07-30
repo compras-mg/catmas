@@ -57,6 +57,20 @@
   .item-spec { margin: .5rem 0; max-width: 1050px; }
   .meta { color: var(--muted); font-size: .82rem; }
   .badges { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+  .scope-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    margin: 1rem 0 0; padding: .85rem 1rem; border: 1px solid var(--line);
+    border-left: 4px solid var(--brand); border-radius: 6px; background: white;
+  }
+  .scope-copy strong { display: block; color: var(--blue); margin-bottom: .15rem; }
+  .scope-copy span { color: var(--muted); font-size: .82rem; line-height: 1.35; }
+  .scope-buttons { display: inline-flex; padding: .2rem; border-radius: 6px; background: #eef2f4; }
+  .scope-buttons button {
+    border: 0; border-radius: 4px; padding: .5rem .75rem; background: transparent;
+    color: var(--blue); cursor: pointer; font: inherit; font-size: .82rem; font-weight: 600;
+  }
+  .scope-buttons button.active { background: var(--blue); color: white; }
+  .scope-buttons button:disabled { opacity: .45; cursor: not-allowed; }
   .badge {
     display: inline-flex; align-items: center; border-radius: 999px; padding: .2rem .55rem;
     background: var(--info-soft); color: var(--blue); font-size: .75rem; font-weight: 600;
@@ -158,6 +172,7 @@
     .split { grid-template-columns: 1fr; }
     .item-top { display: block; }
     .badges { justify-content: flex-start; margin-top: .75rem; }
+    .scope-card { align-items: flex-start; flex-direction: column; }
     .compare-grid { grid-template-columns: 130px repeat(3, minmax(190px, 1fr)); overflow-x: auto; }
     .request-summary { grid-template-columns: 1fr; }
   }
@@ -171,6 +186,16 @@
 <div id="loading">Carregando o histórico do catálogo…</div>
 <main id="app">
   <section class="card item-card" id="item-card"></section>
+  <section class="scope-card" id="scope-card" hidden>
+    <div class="scope-copy">
+      <strong id="scope-title">Escopo: item</strong>
+      <span id="scope-description"></span>
+    </div>
+    <div class="scope-buttons" role="group" aria-label="Escopo do histórico">
+      <button type="button" class="active" data-scope="item">Item</button>
+      <button type="button" data-scope="parent">Material/serviço</button>
+    </div>
+  </section>
   <nav class="tabs" aria-label="Visões do histórico">
     <button class="active" data-panel="timeline-panel">Linha do tempo</button>
     <button data-panel="admin-panel">Fluxo administrativo</button>
@@ -181,7 +206,7 @@
     <div class="toolbar">
       <div id="timeline-count" class="meta"></div>
       <div class="toolbar-group">
-        <label>Categoria
+        <label id="event-filter-label">Categoria
           <select id="event-filter">
             <option value="all">Todos os eventos</option>
             <option value="catalog">Alterações do catálogo</option>
@@ -189,7 +214,7 @@
             <option value="integration">Comunicações de sistema</option>
           </select>
         </label>
-        <label class="switch"><input id="group-events" type="checkbox"> Agrupar eventos próximos</label>
+        <label class="switch" id="group-events-label"><input id="group-events" type="checkbox"> Agrupar eventos próximos</label>
       </div>
     </div>
     <div class="split">
@@ -201,7 +226,7 @@
   <section class="panel" id="admin-panel">
     <div class="split">
       <section class="card request-list">
-        <h2>Solicitações relacionadas</h2>
+        <h2 id="request-list-title">Solicitações relacionadas</h2>
         <div class="meta" id="request-count"></div>
         <div id="requests"></div>
       </section>
@@ -214,7 +239,7 @@
       <div class="toolbar">
         <div>
           <h2>Antes / Solicitado / Analisado</h2>
-          <div class="meta">Selecione uma solicitação para comparar seus três estados.</div>
+          <div class="meta" id="compare-help">Selecione uma solicitação para comparar seus três estados.</div>
         </div>
         <select id="compare-request" class="compare-select" aria-label="Solicitação para comparar"></select>
       </div>
@@ -230,9 +255,11 @@
   const HISTORY_DATABASE_VERSION = "20260729-1";
   let db;
   let item;
+  let allItemEvents = [];
   let events = [];
   let groups = [];
   let requests = [];
+  let activeScope = "item";
   let selectedEventId = null;
   let selectedRequestId = null;
 
@@ -242,8 +269,11 @@
   }[char]));
   const params = new URLSearchParams(location.search);
   const itemId = Number(params.get("item_id"));
+  const SCOPED_PREVIEW = params.get("avaliacao") === "escopos-v1";
+  const ITEM_LEVEL_ACTIONS = new Set([1, 2, 11, 18, 19, 20, 21, 24, 25]);
   if (params.get("origem") === "historico") {
-    $("#back-to-search").href = "./?historico=1&v=20260730-1";
+    const evaluation = SCOPED_PREVIEW ? "&avaliacao=escopos-v1" : "";
+    $("#back-to-search").href = `./?historico=1&v=20260730-2${evaluation}`;
   }
 
   function query(sql, bind = {}) {
@@ -425,6 +455,8 @@
       const previous = result.at(-1);
       const compatible = previous &&
         Number(event.action_code) !== 1 &&
+        !event.parent_request &&
+        !previous.events.some(previousEvent => previousEvent.parent_request) &&
         !previous.events.some(previousEvent => Number(previousEvent.action_code) === 1) &&
         String(event.user_masp || "") === String(previous.user_masp || "") &&
         when - previous.lastDate <= 5 * 60 * 1000;
@@ -496,20 +528,56 @@
     const rows = filteredTimelineRows().reverse();
     if (!rows.some(row => row.id === selectedEventId)) selectedEventId = rows[0]?.id || null;
     $("#timeline-count").textContent = `${rows.length.toLocaleString("pt-BR")} ${$("#group-events").checked ? "acontecimentos" : "registros"} exibidos`;
+    const emptyTimeline = SCOPED_PREVIEW && activeScope === "parent"
+      ? "Este material/serviço não possui solicitações administrativas no histórico extraído."
+      : "Este item não possui eventos nesta categoria.";
     $("#timeline").innerHTML = rows.length ? rows.map(row => `
       <button class="event-button ${row.id === selectedEventId ? "active" : ""}" data-event-id="${esc(row.id)}">
         <span class="event-title"><span>${esc(row.title)}</span>${row.events.length > 1 ? `<span class="badge">${row.events.length}</span>` : ""}</span>
         <span class="event-meta">${esc(formatDate(row.start_at))} · ${esc(row.user_name || "Processo automático")}</span>
-      </button>`).join("") : `<div class="empty">Este item não possui eventos nesta categoria.</div>`;
+      </button>`).join("") : `<div class="empty">${esc(emptyTimeline)}</div>`;
     document.querySelectorAll("[data-event-id]").forEach(button => {
       button.addEventListener("click", () => { selectedEventId = button.dataset.eventId; renderTimeline(); });
     });
     renderEventDetail(rows.find(row => row.id === selectedEventId));
   }
 
+  function renderParentTimelineDetail(request) {
+    $("#event-detail").innerHTML = `
+      <div class="meta">${esc(formatDate(request.last_event_at || request.included_at))}</div>
+      <h2 class="detail-title">${esc(request.type_label)}</h2>
+      <div>
+        <span class="badge ${requestBadgeClass(request.status)}">${esc(request.status_label)}</span>
+        Solicitação ${esc(request.code || request.request_id)}
+      </div>
+      <div class="request-summary">
+        <div class="summary-box"><span>Incluída em</span><strong>${esc(formatDate(request.included_at))}</strong></div>
+        <div class="summary-box"><span>Responsável</span><strong>${esc(request.responsible_name || "Não informado")}</strong></div>
+        <div class="summary-box"><span>Estados disponíveis</span><strong>${esc(request.stage_count)} de 3</strong></div>
+      </div>
+      <div class="notice">
+        Esta solicitação pertence ao material/serviço
+        ${esc(item.material_service_code || item.material_service_id || "—")}.
+        Ela não necessariamente foi motivada pelo item ${esc(item.code || item.item_id)}.
+      </div>
+      <div class="detail-section">
+        <h3>Contexto</h3>
+        <div>${esc(item.material_service_name || "Material/serviço não identificado")}</div>
+        <div class="meta">Consulte a aba Fluxo administrativo para ver toda a tramitação desta solicitação.</div>
+      </div>`;
+  }
+
   function renderEventDetail(row) {
     if (!row) {
-      $("#event-detail").innerHTML = `<div class="empty">Nenhum evento histórico disponível para este item.</div>`;
+      const emptyDetail = SCOPED_PREVIEW && activeScope === "parent"
+        ? "Nenhuma solicitação histórica disponível para este material/serviço."
+        : "Nenhum evento histórico disponível para este item.";
+      $("#event-detail").innerHTML = `<div class="empty">${esc(emptyDetail)}</div>`;
+      return;
+    }
+    const parentRequest = row.events.find(event => event.parent_request)?.parent_request;
+    if (parentRequest) {
+      renderParentTimelineDetail(parentRequest);
       return;
     }
     const end = row.end_at !== row.start_at ? ` – ${formatDate(row.end_at)}` : "";
@@ -546,16 +614,26 @@
   }
 
   function loadRequests() {
+    let scopeCondition = `
+      item_id = :item_id
+      OR (item_id IS NULL AND :parent_id IS NOT NULL AND material_service_id = :parent_id)
+    `;
+    if (SCOPED_PREVIEW && activeScope === "item") {
+      scopeCondition = "item_id = :item_id";
+    } else if (SCOPED_PREVIEW && activeScope === "parent") {
+      scopeCondition = "item_id IS NULL AND :parent_id IS NOT NULL AND material_service_id = :parent_id";
+    }
     requests = query(`
       WITH relevant AS (
         SELECT DISTINCT request_id,
           CASE WHEN item_id = :item_id THEN 'Item' ELSE 'Material/serviço pai' END AS scope
         FROM snapshots
-        WHERE item_id = :item_id
-           OR (item_id IS NULL AND :parent_id IS NOT NULL AND material_service_id = :parent_id)
+        WHERE ${scopeCondition}
       )
       SELECT r.*, rt.label AS type_label, rs.label AS status_label, relevant.scope,
-             COUNT(s.snapshot_id) AS stage_count
+             COUNT(DISTINCT s.stage) AS stage_count,
+             (SELECT MAX(re.occurred_at) FROM request_events re
+              WHERE re.request_id = r.request_id) AS last_event_at
       FROM relevant
       JOIN requests r ON r.request_id = relevant.request_id
       JOIN request_types rt ON rt.code = r.request_type
@@ -567,6 +645,76 @@
     if (!requests.some(request => Number(request.request_id) === Number(selectedRequestId))) {
       selectedRequestId = requests[0]?.request_id ?? null;
     }
+  }
+
+  function buildParentTimelineEvents() {
+    return requests
+      .map(request => ({
+        history_id: `parent-request-${request.request_id}`,
+        item_id: null,
+        occurred_at: request.last_event_at || request.included_at,
+        action_code: 0,
+        action_label: request.type_label,
+        resulting_status_code: request.status,
+        automatic: 0,
+        unit_id: null,
+        user_name: request.responsible_name,
+        user_masp: null,
+        details: `Solicitação ${request.code || request.request_id} — ${request.status_label}`,
+        parent_request: request,
+      }))
+      .sort((left, right) =>
+        timelineTimestamp(left.occurred_at) - timelineTimestamp(right.occurred_at) ||
+        Number(left.parent_request.request_id) - Number(right.parent_request.request_id)
+      );
+  }
+
+  function updateScopeControls() {
+    document.querySelectorAll("[data-scope]").forEach(button => {
+      button.classList.toggle("active", button.dataset.scope === activeScope);
+    });
+    const parentButton = $('[data-scope="parent"]');
+    parentButton.disabled = !item.material_service_id;
+    if (activeScope === "item") {
+      $("#scope-title").textContent = `Escopo: item ${item.code || item.item_id}`;
+      $("#scope-description").textContent =
+        "Criação, especificação, sustentabilidade e situação próprias do item. Solicitações do material/serviço ficam separadas.";
+      $("#request-list-title").textContent = "Solicitações do item";
+      $("#compare-help").textContent = "Compare versões de solicitações específicas deste item.";
+      $("#event-filter-label").hidden = false;
+      $("#group-events-label").hidden = false;
+    } else {
+      $("#scope-title").textContent =
+        `Escopo: material/serviço ${item.material_service_code || item.material_service_id || "—"}`;
+      $("#scope-description").textContent =
+        "Elementos de despesa, unidades e linhas de fornecimento do material/serviço. Essas alterações não necessariamente foram motivadas pelo item consultado.";
+      $("#request-list-title").textContent = "Solicitações do material/serviço";
+      $("#compare-help").textContent =
+        "Compare versões de solicitações que pertencem ao material/serviço.";
+      $("#event-filter").value = "all";
+      $("#event-filter-label").hidden = true;
+      $("#group-events").checked = false;
+      $("#group-events-label").hidden = true;
+    }
+  }
+
+  function applyScope(nextScope) {
+    activeScope = nextScope === "parent" ? "parent" : "item";
+    selectedEventId = null;
+    selectedRequestId = null;
+    loadRequests();
+    if (activeScope === "parent") {
+      events = buildParentTimelineEvents();
+    } else {
+      events = prepareTimelineEvents(
+        allItemEvents.filter(event => ITEM_LEVEL_ACTIONS.has(Number(event.action_code)))
+      );
+    }
+    groups = buildGroups(events);
+    updateScopeControls();
+    renderTimeline();
+    renderRequests();
+    renderComparisonSelector();
   }
 
   function requestBadgeClass(status) {
@@ -587,13 +735,16 @@
 
   function renderRequests() {
     $("#request-count").textContent = `${requests.length.toLocaleString("pt-BR")} solicitações encontradas`;
+    const emptyRequests = SCOPED_PREVIEW && activeScope === "parent"
+      ? "Nenhuma solicitação administrativa foi relacionada a este material/serviço."
+      : "Nenhuma solicitação administrativa foi relacionada a este item.";
     $("#requests").innerHTML = requests.length ? requests.map(request => `
       <button class="request-button ${Number(request.request_id) === Number(selectedRequestId) ? "active" : ""}" data-request-id="${esc(request.request_id)}">
         <span class="badge status ${requestBadgeClass(request.status)}">${esc(request.status_label)}</span>
         <strong>Solicitação ${esc(request.code || request.request_id)}</strong>
         <div class="event-meta">${esc(request.type_label)} · ${esc(formatDate(request.included_at))}</div>
         <div class="event-meta">${esc(request.scope)}</div>
-      </button>`).join("") : `<div class="empty">Nenhuma solicitação administrativa foi relacionada a este item.</div>`;
+      </button>`).join("") : `<div class="empty">${esc(emptyRequests)}</div>`;
     document.querySelectorAll("[data-request-id]").forEach(button => {
       button.addEventListener("click", () => {
         selectedRequestId = Number(button.dataset.requestId);
@@ -753,18 +904,23 @@
     db = new SQL.Database(bytes);
     item = query("SELECT * FROM items WHERE item_id = :item_id", { ":item_id": itemId })[0];
     if (!item) throw new Error("Item não encontrado no banco histórico.");
-    events = query(`
+    allItemEvents = query(`
       SELECT e.*, action_labels.label AS action_label
       FROM events e JOIN action_labels ON action_labels.code = e.action_code
       WHERE e.item_id = :item_id ORDER BY e.occurred_at, e.history_id
     `, { ":item_id": itemId });
-    events = prepareTimelineEvents(events);
-    groups = buildGroups(events);
-    loadRequests();
     renderItem();
-    renderTimeline();
-    renderRequests();
-    renderComparisonSelector();
+    if (SCOPED_PREVIEW) {
+      $("#scope-card").hidden = false;
+      applyScope("item");
+    } else {
+      events = prepareTimelineEvents(allItemEvents);
+      groups = buildGroups(events);
+      loadRequests();
+      renderTimeline();
+      renderRequests();
+      renderComparisonSelector();
+    }
     $("#loading").style.display = "none";
     $("#app").style.display = "block";
   } catch (error) {
@@ -780,6 +936,12 @@
   });
   $("#event-filter").addEventListener("change", renderTimeline);
   $("#group-events").addEventListener("change", renderTimeline);
+  document.querySelectorAll("[data-scope]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (!SCOPED_PREVIEW || button.disabled) return;
+      applyScope(button.dataset.scope);
+    });
+  });
   $("#compare-request").addEventListener("change", () => {
     selectedRequestId = Number($("#compare-request").value);
     renderComparison();
