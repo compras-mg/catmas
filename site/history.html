@@ -243,7 +243,7 @@
   const params = new URLSearchParams(location.search);
   const itemId = Number(params.get("item_id"));
   if (params.get("origem") === "historico") {
-    $("#back-to-search").href = "./?historico=1&v=20260729-6";
+    $("#back-to-search").href = "./?historico=1&v=20260730-1";
   }
 
   function query(sql, bind = {}) {
@@ -291,6 +291,8 @@
     { pattern: /^ALTERACAO DO MATERIAL\b\s*/i, label: "Alteração do material" },
     { pattern: /^ALTERACAO DE ITEM SERVICO\b\s*/i, label: "Alteração de item de serviço" },
     { pattern: /^ALTERACAO DO SERVICO\b\s*/i, label: "Alteração do serviço" },
+    { pattern: /^INCLUSAO (?:DE )?ITEM MATERIAL\b\s*/i, label: "Inclusão de item de material" },
+    { pattern: /^INCLUSAO DE ITEM SERVICO\b\s*/i, label: "Inclusão de item de serviço" },
   ];
 
   function parseRequestEventDetails(value, actionCode) {
@@ -346,6 +348,20 @@
     }
 
     return { stage, communicationStatus, responseCode, operation, observation };
+  }
+
+  function renderIntegrationDetails(parsed) {
+    const integration = parsed.communicationStatus ? `
+      <div class="flow-system">
+        <span>Comunicação</span><strong>${esc(parsed.communicationStatus)}</strong>
+        ${parsed.responseCode ? ` · <span>Retorno</span><strong>${esc(parsed.responseCode)}</strong>` : ""}
+      </div>` : "";
+    const observation = parsed.operation || parsed.observation ? `
+      <div class="flow-observation">
+        ${parsed.operation ? `<strong>${esc(parsed.operation)}</strong>${parsed.observation ? " — " : ""}` : ""}
+        ${parsed.observation ? esc(parsed.observation) : ""}
+      </div>` : "";
+    return integration + observation;
   }
 
   function eventCategory(event) {
@@ -500,15 +516,24 @@
     const sourceIds = row.events
       .filter(event => !event.synthetic)
       .map(event => esc(event.history_id));
+    const sourceEvents = row.events.map(event => {
+      const parsed = parseRequestEventDetails(event.details, event.action_code);
+      if (!parsed.communicationStatus) {
+        return `<li><span class="raw-code">Ação ${esc(event.action_code)}</span> ${esc(cleanDetails(event.details) || event.action_label)}</li>`;
+      }
+      return `
+        <li>
+          <div><span class="raw-code">Ação ${esc(event.action_code)}</span> <strong>${esc(event.action_label)}</strong></div>
+          ${renderIntegrationDetails(parsed)}
+        </li>`;
+    }).join("");
     $("#event-detail").innerHTML = `
       <div class="meta">${esc(formatDate(row.start_at))}${esc(end)}</div>
       <h2 class="detail-title">${esc(row.title)}</h2>
       <div>${esc(row.user_name || "Processo automático")}${row.user_masp ? ` · MASP ${esc(row.user_masp)}` : ""}</div>
       <div class="detail-section">
         <h3>Registros de origem</h3>
-        <ul class="raw-list">${row.events.map(event => `
-          <li><span class="raw-code">Ação ${esc(event.action_code)}</span> ${esc(cleanDetails(event.details) || event.action_label)}</li>`).join("")}
-        </ul>
+        <ul class="raw-list">${sourceEvents}</ul>
       </div>
       <div class="detail-section">
         <h3>Detalhes técnicos</h3>
@@ -552,21 +577,10 @@
 
   function renderRequestFlowEvent(event) {
     const parsed = parseRequestEventDetails(event.details, event.action_code);
-    const integration = parsed.communicationStatus ? `
-      <div class="flow-system">
-        <span>Comunicação</span><strong>${esc(parsed.communicationStatus)}</strong>
-        ${parsed.responseCode ? ` · <span>Retorno</span><strong>${esc(parsed.responseCode)}</strong>` : ""}
-      </div>` : "";
-    const observation = parsed.operation || parsed.observation ? `
-      <div class="flow-observation">
-        ${parsed.operation ? `<strong>${esc(parsed.operation)}</strong>${parsed.observation ? " — " : ""}` : ""}
-        ${parsed.observation ? esc(parsed.observation) : ""}
-      </div>` : "";
     return `
       <li>
         <div class="flow-text">${esc(parsed.stage)}</div>
-        ${integration}
-        ${observation}
+        ${renderIntegrationDetails(parsed)}
         <div class="flow-meta">${esc(formatDate(event.occurred_at))} · ${esc(event.user_name || "Sistema")}${event.user_masp ? ` · MASP ${esc(event.user_masp)}` : ""}</div>
       </li>`;
   }
