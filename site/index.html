@@ -319,7 +319,8 @@
 (async () => {
   const PAGE_SIZE = 50;
   const DATABASE_UPDATED_AT = "2026-07-16T17:42:00-03:00";
-  const HISTORY_PAGE_VERSION = "20260729-5";
+  const HISTORY_PAGE_VERSION = "20260729-6";
+  const HISTORY_ENABLED = new URLSearchParams(location.search).get("historico") === "1";
   const SORT_COLUMNS = Object.freeze({
     codigo: "codigo COLLATE NOCASE",
     spec: "spec COLLATE NOCASE",
@@ -338,6 +339,8 @@
   let sortKey = null;
   let sortDirection = "asc";
   let updating = false; // guard against cascading onChange during facet updates
+
+  if (!HISTORY_ENABLED) document.querySelector("th.col-historico")?.remove();
 
   async function loadCompressedDbBytes(url) {
     const resp = await fetch(url);
@@ -851,7 +854,7 @@
         <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
         <td class="col-versao">${esc(versao)}</td>
         <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
-        <td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}" class="history-link">Ver hist&oacute;rico</a></td>
+        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&origem=historico" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
       `;
       tbody.appendChild(tr);
     }
@@ -1047,7 +1050,9 @@
     { key: "data_atualizacao", label: "Ultima atualizacao", cls: "col-data-atualizacao" },
     { key: "versao", label: "Versao", cls: "col-versao" },
     { key: "data_criacao", label: "Data de criacao", cls: "col-data-criacao" },
-    { key: "historico", label: "Historico", cls: "col-historico" },
+    ...(HISTORY_ENABLED
+      ? [{ key: "historico", label: "Historico", cls: "col-historico" }]
+      : []),
   ];
 
   function loadHiddenCols() {

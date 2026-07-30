@@ -166,7 +166,7 @@
 <body>
 <header>
   <h1>Histórico do item CATMAS</h1>
-  <a class="back-link" href="./">← Voltar à pesquisa</a>
+  <a class="back-link" id="back-to-search" href="./">← Voltar à pesquisa</a>
 </header>
 <div id="loading">Carregando o histórico do catálogo…</div>
 <main id="app">
@@ -242,6 +242,9 @@
   }[char]));
   const params = new URLSearchParams(location.search);
   const itemId = Number(params.get("item_id"));
+  if (params.get("origem") === "historico") {
+    $("#back-to-search").href = "./?historico=1&v=20260729-6";
+  }
 
   function query(sql, bind = {}) {
     const result = db.exec(sql, bind);
