@@ -32,11 +32,17 @@
     border-right: 1px solid #ddd; padding: 1.25rem;
     overflow-y: auto;
   }
+  .sidebar-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
   .sidebar-resizer {
     width: 8px; cursor: ew-resize; background: #f2f5f7;
     border-right: 1px solid #ddd;
   }
-  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; margin-bottom: 1rem; letter-spacing: 0.05em; }
+  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; letter-spacing: 0.05em; }
+  .sidebar-actions { display: flex; align-items: center; gap: 0.6rem; }
+  .filter-close, .filters-backdrop, .mobile-filter-footer { display: none; }
   .filter-group { margin-bottom: 1.25rem; }
   .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
   .filter-group select,
@@ -73,6 +79,9 @@
   }
 
   .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
+
+  .mobile-controls { display: contents; }
+  .mobile-toolbar, .active-filter-chips, .results-cards { display: none; }
 
   .clear-filters {
     display: inline-block; font-size: 0.82rem; color: #be1e2d; cursor: pointer;
@@ -122,6 +131,36 @@
   .table-wrap { position: relative; }
   .col-hidden { display: none; }
 
+  .result-card {
+    background: #fff; border: 1px solid #dbe1e5; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07); overflow: hidden;
+  }
+  .result-card-main { padding: 1rem; }
+  .result-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .result-card-code { font-size: 0.95rem; font-weight: 900; }
+  .status-badge {
+    display: inline-flex; align-items: center; min-height: 26px; padding: 0.2rem 0.55rem;
+    border-radius: 999px; background: #edf1f3; color: #465760;
+    font-size: 0.72rem; line-height: 1.2; font-weight: 900; text-align: center;
+  }
+  .status-badge.is-ativo { background: #e5f5eb; color: #17683a; }
+  .status-badge.is-inativo { background: #f1f1f1; color: #5c5c5c; }
+  .status-badge.is-suspenso { background: #fff2d8; color: #7c5100; }
+  .result-card-spec { font-size: 0.92rem; line-height: 1.48; color: #292f32; }
+  .result-card-material { margin-top: 0.75rem; font-size: 0.8rem; line-height: 1.4; color: #627079; }
+  .result-card details { border-top: 1px solid #edf0f2; }
+  .result-card summary {
+    min-height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1rem; color: #344e5c; cursor: pointer; font-size: 0.82rem; font-weight: 900;
+    list-style: none;
+  }
+  .result-card summary::-webkit-details-marker { display: none; }
+  .result-card summary::after { content: "+"; font-size: 1.15rem; font-weight: 600; }
+  .result-card details[open] summary::after { content: "\2212"; }
+  .result-card dl { padding: 0 1rem 1rem; display: grid; grid-template-columns: minmax(105px, 0.7fr) 1.3fr; gap: 0.55rem 0.75rem; }
+  .result-card dt { font-size: 0.72rem; color: #738089; font-weight: 900; }
+  .result-card dd { min-width: 0; font-size: 0.78rem; line-height: 1.4; overflow-wrap: anywhere; }
+
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
   .sort-button {
@@ -149,11 +188,89 @@
   .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
 
   @media (max-width: 900px) {
-    header { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
-    .updated-at { white-space: normal; }
-    .layout { flex-direction: column; }
-    .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #ddd; }
-    .sidebar-resizer { display: none; }
+    body.filters-open { overflow: hidden; }
+    header { padding: 0.9rem 1rem; }
+    header h1 { font-size: 1.15rem; line-height: 1.2; }
+    .layout { display: block; min-height: calc(100vh - 60px); }
+    .main { width: 100%; padding: 1rem; overflow-x: visible; }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; z-index: 110; width: min(390px, 92vw); min-width: 0;
+      height: 100dvh; padding: 1rem 1rem 5.5rem; border: 0; box-shadow: 12px 0 32px rgba(26,37,43,0.24);
+      transform: translateX(-105%); transition: transform 180ms ease; overscroll-behavior: contain;
+    }
+    body.filters-open .sidebar { transform: translateX(0); }
+    .sidebar-header { position: sticky; top: -1rem; z-index: 4; margin: -1rem -1rem 1rem; padding: 1rem; background: #fff; border-bottom: 1px solid #e4e8eb; }
+    .sidebar-resizer, .facet-resizer { display: none; }
+    .filter-close {
+      display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0;
+      border-radius: 50%; background: #f2f5f7; color: #344e5c; cursor: pointer; font-size: 1.5rem;
+    }
+    .filters-backdrop {
+      display: block; position: fixed; inset: 0; z-index: 100; border: 0;
+      background: rgba(26,37,43,0.52); opacity: 0; pointer-events: none; transition: opacity 180ms ease;
+    }
+    body.filters-open .filters-backdrop { opacity: 1; pointer-events: auto; }
+    .mobile-filter-footer {
+      display: block; position: fixed; left: 0; bottom: 0; width: min(390px, 92vw); z-index: 115;
+      padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom)); background: #fff;
+      border-top: 1px solid #dfe4e7; transform: translateX(-105%); transition: transform 180ms ease;
+    }
+    body.filters-open .mobile-filter-footer { transform: translateX(0); }
+    .mobile-filter-done {
+      width: 100%; min-height: 48px; border: 0; border-radius: 7px; padding: 0.7rem 1rem;
+      background: #be1e2d; color: #fff; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 900;
+    }
+    .mobile-controls {
+      display: block; position: sticky; top: 0; z-index: 20; margin: -1rem -1rem 0.85rem; padding: 0.75rem 1rem 0.7rem;
+      background: rgba(242,245,247,0.96); border-bottom: 1px solid #dde3e6; backdrop-filter: blur(8px);
+    }
+    .mobile-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.65rem; }
+    .mobile-filter-toggle {
+      min-height: 44px; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.8rem;
+      border: 1px solid #b9c3c8; border-radius: 7px; background: #fff; color: #344e5c;
+      cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 900;
+    }
+    .mobile-filter-badge {
+      display: none; min-width: 21px; height: 21px; align-items: center; justify-content: center;
+      border-radius: 999px; background: #be1e2d; color: #fff; font-size: 0.68rem;
+    }
+    .mobile-filter-badge.has-filters { display: inline-flex; }
+    .mobile-results-label { font-size: 0.75rem; color: #64737b; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+    .search-bar { margin-bottom: 0; }
+    .search-bar input { min-height: 48px; border-radius: 7px; font-size: 16px; }
+    .active-filter-chips { display: flex; gap: 0.45rem; margin-top: 0.6rem; overflow-x: auto; scrollbar-width: none; }
+    .active-filter-chips:empty { display: none; }
+    .active-filter-chips::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex: 0 0 auto; min-height: 32px; max-width: 230px; padding: 0.35rem 0.6rem;
+      border: 1px solid #e1aeb3; border-radius: 999px; background: #fff4f5; color: #8c1823;
+      cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pagination { align-items: center; margin-bottom: 0.8rem; }
+    .pagination button { min-height: 44px; }
+    .toggle-cols { display: none; }
+    .col-natureza, .col-elementos-codigos, .col-linhas, .col-classe, .col-grupo,
+    .col-data-atualizacao, .col-versao, .col-data-criacao, .col-historico { display: none; }
+    .facet-item, .admin-filter li { min-height: 44px; display: flex; align-items: center; }
+    .facet-item { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+  }
+
+  @media (max-width: 700px) {
+    header { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
+    header h1 { max-width: 330px; font-size: 1.03rem; }
+    .updated-at { padding: 0; border: 0; white-space: normal; font-size: 0.7rem; }
+    .main { padding: 0.8rem; }
+    .mobile-controls { margin: -0.8rem -0.8rem 0.75rem; padding-right: 0.8rem; padding-left: 0.8rem; }
+    .pagination { display: grid; grid-template-columns: 1fr; }
+    .pagination .info { font-size: 0.8rem; }
+    .pagination > div { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+    .pagination button { width: 100%; padding-right: 0.65rem; padding-left: 0.65rem; }
+    .table-wrap { display: none; }
+    .results-cards { display: grid; gap: 0.75rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar, .filters-backdrop, .mobile-filter-footer { transition: none; }
   }
 </style>
 </head>
@@ -165,8 +282,15 @@
     <div class="updated-at" id="updated-at">Atualizado em 07/08/2026 15:00</div>
   </header>
   <div class="layout">
-    <aside class="sidebar">
-      <h2 style="display:flex;justify-content:space-between;align-items:center">Filtros <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button></h2>
+    <button id="filters-backdrop" class="filters-backdrop" type="button" aria-label="Fechar filtros" tabindex="-1"></button>
+    <aside class="sidebar" id="filters-panel" aria-label="Filtros do cat&aacute;logo">
+      <div class="sidebar-header">
+        <h2>Filtros</h2>
+        <div class="sidebar-actions">
+          <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button>
+          <button id="filter-close" class="filter-close" type="button" aria-label="Fechar filtros">&times;</button>
+        </div>
+      </div>
 
       <div class="filter-group">
         <label>Tipo</label>
@@ -262,12 +386,24 @@
       </div>
 
     </aside>
+    <div class="mobile-filter-footer">
+      <button id="mobile-filter-done" class="mobile-filter-done" type="button">Mostrar resultados</button>
+    </div>
     <div id="sidebar-resizer" class="sidebar-resizer" title="Arraste para ajustar a largura do menu"></div>
 
     <section class="main">
-      <div class="search-bar">
-        <input type="text" id="spec" placeholder="Buscar por c&oacute;digo, especifica&ccedil;&atilde;o, material, grupo ou classe...">
-        <button id="search-clear" class="search-clear" title="Limpar busca">&times;</button>
+      <div class="mobile-controls">
+        <div class="mobile-toolbar">
+          <button id="mobile-filter-toggle" class="mobile-filter-toggle" type="button" aria-controls="filters-panel" aria-expanded="false">
+            <span aria-hidden="true">&#9776;</span> Filtros <span id="mobile-filter-badge" class="mobile-filter-badge"></span>
+          </button>
+          <span class="mobile-results-label">Resultados</span>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="spec" placeholder="Buscar por c&oacute;digo ou descri&ccedil;&atilde;o...">
+          <button id="search-clear" class="search-clear" title="Limpar busca" aria-label="Limpar busca">&times;</button>
+        </div>
+        <div id="active-filter-chips" class="active-filter-chips" aria-label="Filtros ativos"></div>
       </div>
   <div class="pagination">
     <span class="info" id="info"></span>
@@ -281,6 +417,7 @@
       <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
     </div>
   </div>
+  <div id="results-cards" class="results-cards" aria-live="polite"></div>
   <div class="table-wrap">
     <div id="cols-panel" class="cols-panel" role="dialog" aria-label="Colunas">
       <h3>Colunas</h3>
@@ -318,6 +455,9 @@
 <script>
 (async () => {
   const PAGE_SIZE = 50;
+  const MOBILE_PAGE_SIZE = 20;
+  const MOBILE_VIEW = window.matchMedia("(max-width: 700px)");
+  const FILTER_DRAWER_VIEW = window.matchMedia("(max-width: 900px)");
   const DATABASE_UPDATED_AT = "2026-08-07T15:00:00-03:00";
   const HISTORY_PAGE_VERSION = "20260730-2";
   const PAGE_PARAMS = new URLSearchParams(location.search);
@@ -412,6 +552,7 @@
   const sidebarEl    = document.querySelector(".sidebar");
   const sidebarResizer = document.getElementById("sidebar-resizer");
   const tbody        = document.getElementById("tbody");
+  const resultsCards = document.getElementById("results-cards");
   const infoEl       = document.getElementById("info");
   const prevBtn      = document.getElementById("prev");
   const nextBtn      = document.getElementById("next");
@@ -420,6 +561,12 @@
   const colsPanelBody = document.getElementById("cols-panel-body");
   const clearFiltersBtn = document.getElementById("clear-filters");
   const searchClearBtn  = document.getElementById("search-clear");
+  const filterToggleBtn = document.getElementById("mobile-filter-toggle");
+  const filterCloseBtn = document.getElementById("filter-close");
+  const filterBackdrop = document.getElementById("filters-backdrop");
+  const mobileFilterDoneBtn = document.getElementById("mobile-filter-done");
+  const mobileFilterBadge = document.getElementById("mobile-filter-badge");
+  const activeFilterChips = document.getElementById("active-filter-chips");
   const appEl = document.getElementById("app");
   const tableHead = document.querySelector("thead");
 
@@ -493,6 +640,107 @@
       classes:     tsClasse.getValue(),
       spec:        specIn.value.trim(),
     };
+  }
+
+  function pageSize() {
+    return MOBILE_VIEW.matches ? MOBILE_PAGE_SIZE : PAGE_SIZE;
+  }
+
+  function resetAdminFilter(ul) {
+    ul.querySelector("li.active")?.classList.remove("active");
+    ul.querySelector('li[data-value=""]').classList.add("active");
+  }
+
+  function selectedAdminLabel(ul) {
+    const selected = ul.querySelector("li.active");
+    return selected ? selected.textContent.replace(/\s*\([\d.]+\)$/, "").trim() : "";
+  }
+
+  function activeFilterDescriptors() {
+    const descriptors = [];
+    const adminFilters = [
+      [filterTipo, "Tipo"],
+      [filterSituacao, "Situa\u00e7\u00e3o"],
+      [filterAgriFam, "Agricultura familiar"],
+      [filterSustentavel, "Sustent\u00e1vel"],
+      [filterRegistroPrecos, "Registro de pre\u00e7os"],
+      [filterEspecificacaoLonga, "Especifica\u00e7\u00e3o longa"],
+    ];
+    for (const [ul, label] of adminFilters) {
+      if (!getAdminFilterValue(ul)) continue;
+      descriptors.push({
+        label: `${label}: ${selectedAdminLabel(ul)}`,
+        clear: () => { resetAdminFilter(ul); refresh(); },
+      });
+    }
+
+    const selectFilters = [
+      [tsNatureza, "Natureza"],
+      [tsElementos, "Elemento-item"],
+      [tsLinhas, "Linha"],
+      [tsGrupo, "Grupo"],
+      [tsClasse, "Classe"],
+      [tsMaterial, "Material/servi\u00e7o"],
+    ];
+    for (const [select, label] of selectFilters) {
+      const values = select.getValue();
+      if (!values.length) continue;
+      const selection = values.length === 1 ? values[0] : `${values.length} selecionados`;
+      descriptors.push({
+        label: `${label}: ${selection}`,
+        clear: () => { select.clear(true); refresh(); },
+      });
+    }
+    return descriptors;
+  }
+
+  function renderActiveFilters() {
+    const descriptors = activeFilterDescriptors();
+    activeFilterChips.innerHTML = "";
+    for (const descriptor of descriptors) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.textContent = `${descriptor.label} \u00d7`;
+      chip.title = `Remover ${descriptor.label}`;
+      chip.addEventListener("click", descriptor.clear);
+      activeFilterChips.appendChild(chip);
+    }
+    mobileFilterBadge.textContent = descriptors.length;
+    mobileFilterBadge.classList.toggle("has-filters", descriptors.length > 0);
+  }
+
+  function syncFilterDrawerAccessibility() {
+    if (!FILTER_DRAWER_VIEW.matches) {
+      document.body.classList.remove("filters-open");
+      sidebarEl.removeAttribute("aria-hidden");
+      sidebarEl.removeAttribute("role");
+      sidebarEl.removeAttribute("aria-modal");
+      sidebarEl.inert = false;
+      mobileFilterDoneBtn.tabIndex = -1;
+      filterToggleBtn.setAttribute("aria-expanded", "false");
+      return;
+    }
+    const open = document.body.classList.contains("filters-open");
+    sidebarEl.setAttribute("role", "dialog");
+    sidebarEl.setAttribute("aria-modal", String(open));
+    sidebarEl.setAttribute("aria-hidden", String(!open));
+    sidebarEl.inert = !open;
+    mobileFilterDoneBtn.tabIndex = open ? 0 : -1;
+    filterToggleBtn.setAttribute("aria-expanded", String(open));
+  }
+
+  function openMobileFilters() {
+    if (!FILTER_DRAWER_VIEW.matches) return;
+    document.body.classList.add("filters-open");
+    syncFilterDrawerAccessibility();
+    filterCloseBtn.focus();
+  }
+
+  function closeMobileFilters(restoreFocus = true) {
+    document.body.classList.remove("filters-open");
+    syncFilterDrawerAccessibility();
+    if (restoreFocus && FILTER_DRAWER_VIEW.matches) filterToggleBtn.focus();
   }
 
   function codeOf(label) {
@@ -817,8 +1065,55 @@
     }
     return {
       sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
-      params: { ...params, ":limit": PAGE_SIZE, ":offset": page * PAGE_SIZE },
+      params: { ...params, ":limit": pageSize(), ":offset": page * pageSize() },
     };
+  }
+
+  function statusBadgeClass(value) {
+    const normalized = String(value || "").toLocaleLowerCase("pt-BR");
+    if (normalized === "ativo") return "is-ativo";
+    if (normalized === "inativo") return "is-inativo";
+    if (normalized.includes("suspenso")) return "is-suspenso";
+    return "";
+  }
+
+  function renderMobileCards(data) {
+    resultsCards.innerHTML = "";
+    if (!MOBILE_VIEW.matches) return;
+
+    for (const [codigo, spec, situacao, natureza, elementosCodigos, linhasFornecimento, materialCodigo, materialNome, classe, grupo, itemId, tipo, servicoId, dataAtualizacao, versao, dataCriacao] of data) {
+      const detailUrl = tipo === "SERVICO"
+        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(itemId)}`
+        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(itemId)}`;
+      const materialLabel = materialLabels.get(materialCodigo) || formatMaterialLabel(materialCodigo, materialNome);
+      const card = document.createElement("article");
+      card.className = "result-card";
+      card.innerHTML = `
+        <div class="result-card-main">
+          <div class="result-card-heading">
+            <a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link result-card-code">${esc(codigo)} <span aria-hidden="true">\u2197</span></a>
+            <span class="status-badge ${statusBadgeClass(situacao)}">${esc(situacao)}</span>
+          </div>
+          <p class="result-card-spec">${esc(spec)}</p>
+          <p class="result-card-material">${esc(materialLabel)}</p>
+        </div>
+        <details>
+          <summary>Ver detalhes</summary>
+          <dl>
+            <dt>Natureza</dt><dd>${esc(natureza) || "\u2014"}</dd>
+            <dt>Elemento-item</dt><dd>${esc(elementosCodigos) || "\u2014"}</dd>
+            <dt>Linha</dt><dd>${esc(linhasFornecimento) || "\u2014"}</dd>
+            <dt>Classe</dt><dd>${esc(classeLabels.get(classe) || classe) || "\u2014"}</dd>
+            <dt>Grupo</dt><dd>${esc(grupoLabels.get(grupo) || grupo) || "\u2014"}</dd>
+            <dt>Atualiza\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataAtualizacao)) || "\u2014"}</dd>
+            <dt>Vers\u00e3o</dt><dd>${esc(versao) || "\u2014"}</dd>
+            <dt>Cria\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataCriacao)) || "\u2014"}</dd>
+            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
+          </dl>
+        </details>
+      `;
+      resultsCards.appendChild(card);
+    }
   }
 
   function query() {
@@ -829,9 +1124,11 @@
     const rows = db.exec(dataQ.sql, dataQ.params);
     const data = rows.length ? rows[0].values : [];
 
-    const start = total > 0 ? page * PAGE_SIZE + 1 : 0;
-    const end = Math.min((page + 1) * PAGE_SIZE, total);
+    const currentPageSize = pageSize();
+    const start = total > 0 ? page * currentPageSize + 1 : 0;
+    const end = Math.min((page + 1) * currentPageSize, total);
     infoEl.textContent = `Mostrando ${start}\u2013${end} de ${fmt(total)} itens`;
+    mobileFilterDoneBtn.textContent = `Mostrar ${fmt(total)} ${total === 1 ? "item" : "itens"}`;
 
     prevBtn.disabled = page === 0;
     nextBtn.disabled = end >= total;
@@ -860,11 +1157,13 @@
       `;
       tbody.appendChild(tr);
     }
+    renderMobileCards(data);
 
     // Highlight search terms in all FTS-indexed columns
     const specTerm = specIn.value.trim();
     if (specTerm) {
       new Mark(tbody.querySelectorAll("td.col-codigo, td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
+      new Mark(resultsCards.querySelectorAll(".result-card-code, .result-card-spec, .result-card-material")).mark(specTerm, { separateWordSearch: true });
     }
   }
 
@@ -983,6 +1282,7 @@
     updating = false;
     clearFiltersBtn.hidden = !hasActiveFilters();
     searchClearBtn.style.display = specIn.value ? "block" : "none";
+    renderActiveFilters();
   }
 
   // Debounce for text inputs
@@ -1005,6 +1305,16 @@
   specIn.addEventListener("input", debouncedRefresh);
   clearFiltersBtn.addEventListener("click", resetAllFilters);
   searchClearBtn.addEventListener("click", () => { specIn.value = ""; refresh(); });
+  filterToggleBtn.addEventListener("click", openMobileFilters);
+  filterCloseBtn.addEventListener("click", () => closeMobileFilters());
+  filterBackdrop.addEventListener("click", () => closeMobileFilters());
+  mobileFilterDoneBtn.addEventListener("click", () => closeMobileFilters());
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && document.body.classList.contains("filters-open")) closeMobileFilters();
+  });
+  FILTER_DRAWER_VIEW.addEventListener("change", () => closeMobileFilters(false));
+  MOBILE_VIEW.addEventListener("change", () => { page = 0; query(); });
+  syncFilterDrawerAccessibility();
 
   prevBtn.addEventListener("click", () => { page--; query(); });
   nextBtn.addEventListener("click", () => { page++; query(); });
