@@ -2,39 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CATMAS · Atualização do buscador</title>
-<meta name="description" content="Envie o CSV do KNIME, confira a base e atualize o buscador CATMAS no GitHub Pages.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c4ee8'/%3E%3Cpath d='M23 9H13a7 7 0 000 14h10v-5H13a2 2 0 010-4h10z' fill='white'/%3E%3C/svg%3E">
+<title>CATMAS · Acesso ao atualizador</title>
+<meta name="description" content="Como entrar no atualizador CATMAS com seu e-mail institucional.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><div class="brand"><span class="brandmark" aria-hidden="true">C</span><span>CATMAS <small>Atualização do buscador</small></span></div><div class="account"><span id="connection-status">GitHub desconectado</span><button id="connect-open" class="button secondary">Conectar GitHub</button><button id="disconnect" class="button secondary" hidden>Desconectar</button></div></header>
+<header><div class="brand"><span class="brandmark" aria-hidden="true">C</span><span>CATMAS <small>Atualização do buscador</small></span></div></header>
 <main>
-<section class="intro"><div><p class="eyebrow">GESTÃO DO CATÁLOGO</p><h1>Atualizar a base do CATMAS</h1><p>Selecione a extração do KNIME, confira a validação e publique no buscador.</p></div><a class="external" href="https://compras-mg.github.io/catmas/" target="_blank" rel="noopener noreferrer">Abrir buscador</a></section>
-<section id="auth-panel" class="auth-panel" hidden aria-labelledby="auth-title">
-<div><h2 id="auth-title">Conectar ao repositório</h2><p>Use um token GitHub com acesso a <strong>compras-mg/catmas</strong>. Ele será mantido somente nesta aba e enviado diretamente ao GitHub.</p><details><summary>Como obter o acesso</summary><p>Crie um token de acesso com permissões específicas para esse repositório: <strong>Contents: leitura e escrita</strong> e <strong>Pages: leitura</strong>. Se a organização exigir aprovação, o acesso depende dela.</p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Criar token no GitHub</a></details></div>
-<form id="auth-form"><label for="token">Token de acesso GitHub</label><input type="password" id="token" name="github-token" autocomplete="off" spellcheck="false" required placeholder="Cole seu token de acesso"><button id="connect-submit" class="button primary" type="submit">Conectar</button><p id="auth-message" role="status"></p></form>
+<section class="intro"><div><p class="eyebrow">ACESSO DA EQUIPE</p><h1>Atualizar a base do CATMAS</h1><p>Entre com seu e-mail institucional autorizado para validar o CSV do KNIME e publicar a nova base.</p></div><a class="external" href="../">Abrir buscador</a></section>
+<section class="card" aria-labelledby="login-title">
+<h2 id="login-title">Como fazer o login</h2>
+<ol>
+<li>Clique em <strong>Entrar no atualizador</strong>.</li>
+<li>Na tela de acesso da Cloudflare, informe seu e-mail autorizado com o domínio <strong>@planejamento.mg.gov.br</strong> e solicite o código.</li>
+<li>Abra sua caixa de e-mail, copie o código recebido e informe-o na tela de acesso. Se não encontrar a mensagem, confira o spam.</li>
+<li>Após entrar, selecione o CSV do KNIME, valide a base e clique em <strong>Atualizar GitHub Pages</strong>. Mantenha a aba aberta até a confirmação da publicação.</li>
+</ol>
+<p>O acesso é individual e restrito aos e-mails cadastrados da equipe. Não é necessário ter conta no GitHub nem informar senha do e-mail institucional.</p>
+<p>Se a sua sessão ainda estiver válida, o atualizador poderá abrir diretamente, sem pedir um novo código.</p>
+<p><a class="button primary" href="https://catmas-atualizacao.samira-marx.workers.dev/">Entrar no atualizador</a></p>
 </section>
-<ol class="steps" aria-label="Etapas da atualização"><li id="step-file" class="current"><span>1</span>Selecionar CSV</li><li id="step-validation"><span>2</span>Validar base</li><li id="step-publication"><span>3</span>Publicar no buscador</li></ol>
-<div class="workspace">
-<section class="card file-card" aria-labelledby="file-title"><div class="card-heading"><h2 id="file-title">Arquivo do KNIME</h2><span class="tag">CSV</span></div>
-<label class="drop-zone" id="drop-zone" for="file"><svg width="38" height="38" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M10 4h9l6 6v17H7V4h3Z" stroke="currentColor" stroke-width="1.5"/><path d="M19 4v7h6M11 17h10M11 22h7" stroke="currentColor" stroke-width="1.5"/></svg><strong id="file-label">Escolher arquivo CSV</strong><span id="file-caption">Clique ou arraste o arquivo para cá</span><input id="file" type="file" accept=".csv,text/csv" class="file-input"></label>
-<div class="file-options"><label for="encoding">Codificação do arquivo</label><select id="encoding"><option value="utf-8">UTF-8 (padrão)</option><option value="windows-1252">Windows / CP1252</option></select></div>
-<p class="helper">O CSV é processado nesta aba. Nenhum arquivo bruto será enviado ao site.</p>
-<button id="validate" class="button primary full" disabled>Validar CSV</button><button id="cancel-validation" class="button secondary full" hidden>Cancelar validação</button>
-</section>
-<section class="card result-card" aria-labelledby="validation-title"><div class="card-heading"><h2 id="validation-title">Validação da base</h2><span id="result-tag" class="tag neutral">Aguardando arquivo</span></div>
-<div id="empty-result" class="empty-result"><span class="outline-circle" aria-hidden="true">✓</span><h3>Confira antes de publicar</h3><p>A validação verifica os campos do catálogo, as datas e a integridade da base de busca.</p></div>
-<div id="processing" hidden><div class="progress-heading"><span id="processing-label">Lendo o CSV…</span><span class="spinner" aria-hidden="true"></span></div><div class="indeterminate" role="progressbar" aria-label="Validação em andamento"></div><p class="helper">Mantenha esta aba aberta durante o processamento.</p></div>
-<div id="result" hidden><div class="metrics"><div><span>Itens para publicação</span><strong id="metric-items">—</strong></div><div><span>Registros no CSV</span><strong id="metric-rows">—</strong></div><div><span>Sem código, excluídos</span><strong id="metric-excluded">—</strong></div></div><div id="validation-notice" class="notice"></div><ul id="issues" class="issues"></ul><button id="download-report" class="text-button">Baixar relatório da validação</button></div>
-<p id="validation-error" class="error" role="alert" hidden></p>
-</section>
-</div>
-<section class="card publish-card" aria-labelledby="publish-title"><div class="publish-description"><p class="eyebrow">GITHUB PAGES</p><h2 id="publish-title">Publicar a base validada</h2><p id="publish-description">A atualização mantém o buscador com data de criação e especificação longa. Mantenha esta aba aberta até a confirmação.</p><div class="destination"><span>Destino</span><a href="https://github.com/compras-mg/catmas" target="_blank" rel="noopener noreferrer">compras-mg/catmas</a></div></div><div class="publish-actions"><p id="publish-hint">Selecione e valide um CSV para continuar.</p><button id="publish" class="button primary" disabled>Atualizar GitHub Pages</button><button id="retry-verify" class="button secondary" hidden>Verificar publicação</button><button id="download-publication" class="text-button" hidden>Baixar registro do envio</button></div>
-<div id="publication-state" class="publication-state" hidden role="status"><span class="spinner" id="publication-spinner" aria-hidden="true"></span><div><strong id="publication-title"></strong><p id="publication-message"></p><a id="publication-link" target="_blank" rel="noopener noreferrer" hidden>Ver atualização no GitHub</a></div></div>
-</section>
-<footer><span>Atualização sob demanda · CSV do KNIME</span><span>Seu acesso GitHub não é salvo nesta página.</span></footer>
+<footer><span>Atualização sob demanda · CSV do KNIME</span><span>Acesso restrito à equipe autorizada.</span></footer>
 </main>
-<script type="module" src="app.mjs"></script>
 </body></html>
