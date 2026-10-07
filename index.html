@@ -279,7 +279,7 @@
 <div id="app">
   <header>
     <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
-    <div class="updated-at" id="updated-at">Atualizado em 06/10/2026 22:18</div>
+    <div class="updated-at" id="updated-at">Conferindo atualização…</div>
   </header>
   <div class="layout">
     <button id="filters-backdrop" class="filters-backdrop" type="button" aria-label="Fechar filtros" tabindex="-1"></button>
@@ -458,8 +458,16 @@
   const MOBILE_PAGE_SIZE = 20;
   const MOBILE_VIEW = window.matchMedia("(max-width: 700px)");
   const FILTER_DRAWER_VIEW = window.matchMedia("(max-width: 900px)");
-  const PUBLICATION_UPDATED_AT = "2026-10-06T22:18:53-03:00";
-  const DATABASE_VERSION = "20261006-1";
+  let publication = null;
+  try {
+    const response = await fetch("atualizacao.json", { cache: "no-store" });
+    if (response.ok) {
+      const value = await response.json();
+      if (/^[a-f0-9]{64}$/.test(value.data_sha256) && !Number.isNaN(Date.parse(value.updated_at))) publication = value;
+    }
+  } catch {}
+  const PUBLICATION_UPDATED_AT = publication?.updated_at;
+  const DATABASE_VERSION = publication?.data_sha256 || String(Date.now());
   const HISTORY_PAGE_VERSION = "20260730-2";
   const PAGE_PARAMS = new URLSearchParams(location.search);
   const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
@@ -487,7 +495,16 @@
 
   async function loadCompressedDbBytes(url) {
     const resp = await fetch(url, { cache: "no-store" });
+    if (!resp.ok) throw new Error("Não foi possível carregar a base do buscador.");
     const gzBytes = new Uint8Array(await resp.arrayBuffer());
+    if (publication) {
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", gzBytes));
+      const received = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+      if (received !== publication.data_sha256) {
+        document.getElementById("updated-at").textContent = "Publicação em andamento. Recarregue em instantes.";
+        throw new Error("A base publicada ainda não corresponde à atualização. Recarregue em instantes.");
+      }
+    }
 
     if ("DecompressionStream" in window) {
       const ds = new DecompressionStream("gzip");
@@ -498,6 +515,10 @@
   }
 
   function renderDatabaseUpdatedAt() {
+    if (!PUBLICATION_UPDATED_AT) {
+      document.getElementById("updated-at").textContent = "Data da atualização indisponível";
+      return;
+    }
     const date = new Date(PUBLICATION_UPDATED_AT);
     if (Number.isNaN(date.getTime())) return;
     const formatted = date.toLocaleString("pt-BR", {
@@ -511,12 +532,11 @@
     document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
   }
 
-  renderDatabaseUpdatedAt();
-
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
   const dbBytes = await loadCompressedDbBytes(`data.db.gz?v=${DATABASE_VERSION}`);
   db = new SQL.Database(dbBytes);
+  renderDatabaseUpdatedAt();
 
   // Pre-load hierarchy for cascading dropdowns
   hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;

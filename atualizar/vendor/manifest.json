@@ -1,0 +1,62 @@
+{
+  "index.mjs": {
+    "parts": [
+      "index.mjs.000.part",
+      "index.mjs.001.part",
+      "index.mjs.002.part",
+      "index.mjs.003.part",
+      "index.mjs.004.part",
+      "index.mjs.005.part",
+      "index.mjs.006.part",
+      "index.mjs.007.part",
+      "index.mjs.008.part",
+      "index.mjs.009.part",
+      "index.mjs.010.part",
+      "index.mjs.011.part",
+      "index.mjs.012.part",
+      "index.mjs.013.part",
+      "index.mjs.014.part"
+    ],
+    "sha256": "a6d3fe46aa3f924e7686329f97b0564549ef1f787e0c19924179aef7f72bcc01",
+    "rawBytes": 642742
+  },
+  "sqlite3.wasm": {
+    "parts": [
+      "sqlite3.wasm.000.part",
+      "sqlite3.wasm.001.part",
+      "sqlite3.wasm.002.part",
+      "sqlite3.wasm.003.part",
+      "sqlite3.wasm.004.part",
+      "sqlite3.wasm.005.part",
+      "sqlite3.wasm.006.part",
+      "sqlite3.wasm.007.part",
+      "sqlite3.wasm.008.part",
+      "sqlite3.wasm.009.part",
+      "sqlite3.wasm.010.part",
+      "sqlite3.wasm.011.part",
+      "sqlite3.wasm.012.part",
+      "sqlite3.wasm.013.part",
+      "sqlite3.wasm.014.part",
+      "sqlite3.wasm.015.part",
+      "sqlite3.wasm.016.part",
+      "sqlite3.wasm.017.part",
+      "sqlite3.wasm.018.part",
+      "sqlite3.wasm.019.part",
+      "sqlite3.wasm.020.part",
+      "sqlite3.wasm.021.part",
+      "sqlite3.wasm.022.part",
+      "sqlite3.wasm.023.part",
+      "sqlite3.wasm.024.part",
+      "sqlite3.wasm.025.part",
+      "sqlite3.wasm.026.part",
+      "sqlite3.wasm.027.part",
+      "sqlite3.wasm.028.part",
+      "sqlite3.wasm.029.part",
+      "sqlite3.wasm.030.part",
+      "sqlite3.wasm.031.part",
+      "sqlite3.wasm.032.part"
+    ],
+    "sha256": "2ee8f3dab694532afc8840e07703127287662d08b74e6ff50491ce63f00d5752",
+    "rawBytes": 868907
+  }
+}
