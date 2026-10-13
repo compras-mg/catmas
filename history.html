@@ -975,7 +975,7 @@
     $("#lookup-message").textContent = "Consultando o histórico…";
     try {
       await ensureDatabase();
-      const matches = query("SELECT item_id FROM items WHERE code = :code", { ":code": code.padStart(9, "0") });
+      const matches = query("SELECT item_id FROM items WHERE LTRIM(CAST(code AS TEXT), '0') = :code", { ":code": code.replace(/^0+/, "") });
       if (!matches.length) {
         $("#lookup-message").textContent = "Código não encontrado no banco histórico. Confira o código e tente novamente.";
         return;
