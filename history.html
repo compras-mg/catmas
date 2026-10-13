@@ -176,6 +176,15 @@
     .compare-grid { grid-template-columns: 130px repeat(3, minmax(190px, 1fr)); overflow-x: auto; }
     .request-summary { grid-template-columns: 1fr; }
   }
+
+  .lookup { max-width: 1380px; margin: 1.25rem auto 0; padding: 0 1.25rem; }
+  .lookup form { padding: 1rem 1.35rem; }
+  .lookup label { display: block; color: var(--blue); font-weight: 600; margin-bottom: .5rem; }
+  .lookup-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .lookup input { flex: 1; min-width: 180px; border: 1px solid #949494; border-radius: 3px; padding: .65rem; }
+  .lookup button { border: 0; border-radius: 3px; background: var(--brand); color: white; padding: .65rem 1rem; cursor: pointer; font-weight: 600; }
+  .lookup button:disabled { opacity: .6; cursor: wait; }
+  #lookup-message { margin: .6rem 0 0; color: var(--muted); font-size: .85rem; }
 </style>
 </head>
 <body>
@@ -183,6 +192,16 @@
   <h1>Histórico do item CATMAS</h1>
   <a class="back-link" id="back-to-search" href="./">← Voltar à pesquisa</a>
 </header>
+<section class="lookup">
+  <form id="item-lookup" class="card">
+    <label for="item-code">Código do item</label>
+    <div class="lookup-row">
+      <input id="item-code" type="text" inputmode="numeric" autocomplete="off" placeholder="Digite o código do item" aria-describedby="lookup-message" required>
+      <button id="lookup-submit" type="submit">Consultar histórico</button>
+    </div>
+    <p id="lookup-message" role="status" aria-live="polite">Digite o código do item para consultar seu histórico.</p>
+  </form>
+</section>
 <div id="loading">Carregando o histórico do catálogo…</div>
 <main id="app">
   <section class="card item-card" id="item-card"></section>
@@ -268,7 +287,7 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[char]));
   const params = new URLSearchParams(location.search);
-  const itemId = Number(params.get("item_id"));
+  let itemId = Number(params.get("item_id"));
   const SCOPED_PREVIEW = params.get("avaliacao") === "escopos-v1";
   const ITEM_LEVEL_ACTIONS = new Set([1, 2, 11, 18, 19, 20, 21, 24, 25]);
   if (params.get("origem") === "historico") {
@@ -897,11 +916,25 @@
     $("#comparison").innerHTML = html;
   }
 
-  try {
-    if (!Number.isInteger(itemId) || itemId <= 0) throw new Error("O item não foi informado no endereço.");
-    const SQL = await initSqlJs({ locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${file}` });
-    const bytes = await loadCompressedDbBytes(`history.db.gz?v=${HISTORY_DATABASE_VERSION}`);
-    db = new SQL.Database(bytes);
+
+  let databasePromise;
+  function ensureDatabase() {
+    if (!databasePromise) databasePromise = (async () => {
+      const SQL = await initSqlJs({ locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${file}` });
+      const bytes = await loadCompressedDbBytes(`history.db.gz?v=${HISTORY_DATABASE_VERSION}`);
+      db = new SQL.Database(bytes);
+    })().catch(error => { databasePromise = null; throw error; });
+    return databasePromise;
+  }
+
+  async function openItem(id) {
+    itemId = id;
+    activeScope = "item";
+    selectedEventId = null;
+    selectedRequestId = null;
+    $("#event-filter").value = "all";
+    $("#group-events").checked = false;
+    await ensureDatabase();
     item = query("SELECT * FROM items WHERE item_id = :item_id", { ":item_id": itemId })[0];
     if (!item) throw new Error("Item não encontrado no banco histórico.");
     allItemEvents = query(`
@@ -923,6 +956,41 @@
     }
     $("#loading").style.display = "none";
     $("#app").style.display = "block";
+    $("#item-code").value = item.code || "";
+    $("#lookup-message").textContent = `Histórico do item ${item.code || item.item_id}.`;
+    const url = new URL(location.href);
+    url.searchParams.set("item_id", String(itemId));
+    url.searchParams.delete("codigo");
+    history.replaceState(null, "", url);
+  }
+
+  $("#item-lookup").addEventListener("submit", async event => {
+    event.preventDefault();
+    const code = $("#item-code").value.trim();
+    if (!/^\d{1,9}$/.test(code)) {
+      $("#lookup-message").textContent = "Digite um código válido, com até 9 dígitos.";
+      return;
+    }
+    $("#lookup-submit").disabled = true;
+    $("#lookup-message").textContent = "Consultando o histórico…";
+    try {
+      await ensureDatabase();
+      const matches = query("SELECT item_id FROM items WHERE code = :code", { ":code": code.padStart(9, "0") });
+      if (!matches.length) {
+        $("#lookup-message").textContent = "Código não encontrado no banco histórico. Confira o código e tente novamente.";
+        return;
+      }
+      await openItem(Number(matches[0].item_id));
+    } catch (error) {
+      $("#lookup-message").textContent = error.message;
+    } finally {
+      $("#lookup-submit").disabled = false;
+    }
+  });
+
+  try {
+    if (Number.isInteger(itemId) && itemId > 0) await openItem(itemId);
+    else $("#loading").style.display = "none";
   } catch (error) {
     $("#loading").innerHTML = `<div class="error"><strong>Não foi possível abrir o histórico.</strong><br>${esc(error.message)}</div>`;
     console.error(error);
