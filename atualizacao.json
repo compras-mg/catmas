@@ -1,7 +1,24 @@
 {
-  "source_sha256": "1421d6f5edf91d94c33866ae9822c18d4fbbf8da30375f692df13d9ed769fa73",
-  "data_sha256": "c7d79d72c5956418fddeca22269babda9b1d54a8df1d175bcb82be5648ed1c94",
+  "schema_version": 2,
+  "cycle_id": "71acdf42733d41a1841b1ac080541e64",
+  "updated_at": "2026-10-13T20:21:07.645744-03:00",
+  "source_sha256": "ec663d21f0181c3a001d2daa29afbf474c12a979d68d2e90696c3e257c1fd09e",
+  "data_sha256": "b77f4d3bee9249dfe7d0a5e83434af1603d2787e9c99c535fd4b78822f66010d",
   "items": 212165,
   "converter_commit": "f8c392eac1944c690d42c17b9aec60812a78065d",
-  "updated_at": "2026-10-13T12:30:37.372936-03:00"
+  "history_sha256": "13d4bcdc80c511086f3d2a6fb78f29d4de78aebfc3ae82f7d70732022126f77f",
+  "history_source_sha256": "5e24ef873507e758dc00262bc9d25d73b56b52338727cde30d1679b3e477908c",
+  "history_counts": {
+    "items": 212329,
+    "items_with_events": 117090,
+    "events": 914601,
+    "requests": 6204,
+    "request_events": 24259,
+    "snapshots": 18435,
+    "components": 57317,
+    "integrity": "ok"
+  },
+  "catalog_extracted_at": "2026-10-13T20:19:04.322108-03:00",
+  "history_extracted_at": "2026-10-13T20:21:07.645744-03:00",
+  "history_converter_commit": "8190b5ed1334fb2203aeef4fd823d70356f26944"
 }

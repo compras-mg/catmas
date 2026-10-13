@@ -466,9 +466,13 @@
       if (/^[a-f0-9]{64}$/.test(value.data_sha256) && !Number.isNaN(Date.parse(value.updated_at))) publication = value;
     }
   } catch {}
+  // CATMAS_CICLO_INTEGRADO_V1
+  if (!publication?.cycle_id || !/^[a-f0-9]{64}$/.test(publication.history_sha256)) {
+    throw new Error("Não foi possível confirmar o ciclo conjunto. Recarregue a página.");
+  }
   const PUBLICATION_UPDATED_AT = publication?.updated_at;
   const DATABASE_VERSION = publication?.data_sha256 || String(Date.now());
-  const HISTORY_PAGE_VERSION = "20260730-2";
+  const HISTORY_PAGE_VERSION = publication.cycle_id;
   const PAGE_PARAMS = new URLSearchParams(location.search);
   const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
   const HISTORY_EVALUATION = PAGE_PARAMS.get("avaliacao") === "escopos-v1";
@@ -1129,7 +1133,7 @@
             <dt>Atualiza\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataAtualizacao)) || "\u2014"}</dd>
             <dt>Vers\u00e3o</dt><dd>${esc(versao) || "\u2014"}</dd>
             <dt>Cria\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataCriacao)) || "\u2014"}</dd>
-            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
+            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
           </dl>
         </details>
       `;
@@ -1174,7 +1178,7 @@
         <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
         <td class="col-versao">${esc(versao)}</td>
         <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
-        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
+        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
       `;
       tbody.appendChild(tr);
     }

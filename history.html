@@ -271,7 +271,19 @@
 <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <script>
 (async () => {
-  const HISTORY_DATABASE_VERSION = "20260729-1";
+  // CATMAS_CICLO_INTEGRADO_V1
+  let publication;
+  async function loadPublication() {
+    const response = await fetch("atualizacao.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("Não foi possível confirmar a atualização conjunta.");
+    const value = await response.json();
+    if (!/^[a-f0-9]{32}$/.test(value.cycle_id || "") || !/^[a-f0-9]{64}$/.test(value.history_sha256 || ""))
+      throw new Error("Metadados do histórico inválidos. Recarregue a página.");
+    const expected = new URLSearchParams(location.search).get("ciclo");
+    if (expected && expected !== value.cycle_id)
+      throw new Error("O catálogo foi atualizado. Volte ao buscador e recarregue para consultar o mesmo ciclo.");
+    publication = value;
+  }
   let db;
   let item;
   let allItemEvents = [];
@@ -303,9 +315,13 @@
   }
 
   async function loadCompressedDbBytes(url) {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`Não foi possível carregar o banco histórico (${response.status}).`);
     const gzipBytes = new Uint8Array(await response.arrayBuffer());
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", gzipBytes));
+    const received = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+    if (received !== publication.history_sha256)
+      throw new Error("A base do histórico ainda não corresponde ao ciclo publicado. Recarregue em alguns instantes.");
     if ("DecompressionStream" in window) {
       const stream = new Blob([gzipBytes]).stream().pipeThrough(new DecompressionStream("gzip"));
       return new Uint8Array(await new Response(stream).arrayBuffer());
@@ -921,7 +937,8 @@
   function ensureDatabase() {
     if (!databasePromise) databasePromise = (async () => {
       const SQL = await initSqlJs({ locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${file}` });
-      const bytes = await loadCompressedDbBytes(`history.db.gz?v=${HISTORY_DATABASE_VERSION}`);
+      await loadPublication();
+      const bytes = await loadCompressedDbBytes(`history.db.gz?v=${publication.history_sha256}`);
       db = new SQL.Database(bytes);
     })().catch(error => { databasePromise = null; throw error; });
     return databasePromise;
