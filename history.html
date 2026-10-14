@@ -36,6 +36,12 @@
     display: flex; justify-content: space-between; align-items: center; gap: 1rem;
   }
   header h1 { margin: 0; font-size: 1.25rem; font-weight: 900; text-transform: uppercase; }
+  .header-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; justify-content: flex-end; }
+  .updated-at {
+    border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
+    padding: .35rem .65rem; font-size: .78rem; font-weight: 600;
+    white-space: nowrap; color: rgba(255,255,255,0.95);
+  }
   .back-link {
     color: white; border: 1px solid #ffffff80; border-radius: 3px;
     padding: .45rem .7rem; text-decoration: none; font-size: .85rem; font-weight: 600;
@@ -169,6 +175,9 @@
   .empty { color: var(--muted); font-style: italic; padding: 1rem 0; }
   .error { max-width: 740px; margin: 3rem auto; background: white; border: 1px solid #e5b7bd; padding: 1.2rem; border-radius: 6px; }
   @media (max-width: 900px) {
+    header { flex-wrap: wrap; }
+    .header-actions { justify-content: flex-start; }
+    .updated-at { white-space: normal; }
     .split { grid-template-columns: 1fr; }
     .item-top { display: block; }
     .badges { justify-content: flex-start; margin-top: .75rem; }
@@ -190,7 +199,10 @@
 <body>
 <header>
   <h1>Histórico do item CATMAS</h1>
-  <a class="back-link" id="back-to-search" href="./">← Voltar à pesquisa</a>
+  <div class="header-actions">
+    <div class="updated-at" id="updated-at" role="status" aria-live="polite">Conferindo atualização…</div>
+    <a class="back-link" id="back-to-search" href="./">← Voltar à pesquisa</a>
+  </div>
 </header>
 <section class="lookup">
   <form id="item-lookup" class="card">
@@ -283,6 +295,18 @@
     if (expected && expected !== value.cycle_id)
       throw new Error("O catálogo foi atualizado. Volte ao buscador e recarregue para consultar o mesmo ciclo.");
     publication = value;
+    const date = new Date(value.updated_at);
+    const marker = document.getElementById("updated-at");
+    if (Number.isNaN(date.getTime())) {
+      marker.textContent = "Data da atualização indisponível";
+    } else {
+      const formatted = date.toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      }).replace(",", "");
+      marker.textContent = `Atualizado em ${formatted}`;
+    }
   }
   let db;
   let item;
@@ -1006,9 +1030,11 @@
   });
 
   try {
+    await loadPublication();
     if (Number.isInteger(itemId) && itemId > 0) await openItem(itemId);
     else $("#loading").style.display = "none";
   } catch (error) {
+    document.getElementById("updated-at").textContent = "Data da atualização indisponível";
     $("#loading").innerHTML = `<div class="error"><strong>Não foi possível abrir o histórico.</strong><br>${esc(error.message)}</div>`;
     console.error(error);
   }
