@@ -1,1512 +1,1512 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;900&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Raleway', sans-serif; background: #f2f5f7; color: #3c3c3b; }
-  #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
-  #app { display: none; }
-
-  header {
-    background: #be1e2d; color: #fff; padding: 1rem 1.5rem;
-    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-  }
-  header h1 { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; }
-  .updated-at {
-    border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
-    padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 600;
-    white-space: nowrap; color: rgba(255,255,255,0.95);
-  }
-
-  .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
-
-  .sidebar {
-    width: 320px; min-width: 320px; background: #fff;
-    border-right: 1px solid #ddd; padding: 1.25rem;
-    overflow-y: auto;
-  }
-  .sidebar-header {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  .sidebar-resizer {
-    width: 8px; cursor: ew-resize; background: #f2f5f7;
-    border-right: 1px solid #ddd;
-  }
-  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; letter-spacing: 0.05em; }
-  .sidebar-actions { display: flex; align-items: center; gap: 0.6rem; }
-  .filter-close, .filters-backdrop, .mobile-filter-footer { display: none; }
-  .filter-group { margin-bottom: 1.25rem; }
-  .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
-  .filter-group select,
-  .filter-group input[type="text"] {
-    width: 100%; padding: 0.5rem; border: 1px solid #949494; border-radius: 3px;
-    font-size: 0.9rem; background: #fff;
-  }
-  .filter-group .ts-wrapper { font-size: 0.9rem; }
-  .filter-group .ts-control { border-radius: 3px; }
-  .admin-filter { list-style: none; margin-top: 0.25rem; }
-  .admin-filter li {
-    padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.85rem;
-    border-left: 3px solid transparent; color: #333;
-  }
-  .admin-filter li:hover { background: #f5f8fc; }
-  .admin-filter li.active { border-left-color: #be1e2d; color: #be1e2d; font-weight: 600; }
-
-  :root { --facet-max-height: 220px; }
-  .facet-list { max-height: var(--facet-max-height); overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
-  .facet-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.82rem;
-    border-bottom: 1px solid #f0f0f0; user-select: none;
-  }
-  .facet-item:last-child { border-bottom: none; }
-  .facet-item:hover { background: #f5f8fc; }
-  .facet-item.selected { background: #fce8ea; font-weight: 600; }
-  .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
-  .facet-resizer {
-    height: 10px; margin: 0.6rem 0 0.2rem;
-    background: #f2f5f7; border: 1px solid #e0e0e0; border-radius: 6px;
-    cursor: ns-resize;
-  }
-
-  .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
-
-  .mobile-controls { display: contents; }
-  .mobile-toolbar, .active-filter-chips, .results-cards { display: none; }
-
-  .clear-filters {
-    display: inline-block; font-size: 0.82rem; color: #be1e2d; cursor: pointer;
-    border: none; background: none; padding: 0; text-decoration: underline;
-  }
-  .clear-filters:hover { color: #ef071b; }
-  .clear-filters[hidden] { display: none; }
-
-  .search-bar { margin-bottom: 1rem; position: relative; }
-  .search-bar input {
-    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #949494; border-radius: 3px;
-    font-size: 1rem; background: #fff;
-  }
-  .search-clear {
-    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
-    border: none; background: none; cursor: pointer; color: #999; font-size: 1.1rem;
-    line-height: 1; padding: 0.2rem; display: none;
-  }
-  .search-clear:hover { color: #be1e2d; }
-
-  .pagination {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
-  }
-  .pagination .info { font-size: 0.9rem; color: #3c3c3b; }
-  .pagination button {
-    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 3px;
-    background: #fff; cursor: pointer; font-size: 0.9rem;
-  }
-  .pagination button:disabled { opacity: 0.4; cursor: default; }
-  .pagination button:not(:disabled):hover { background: #e8e8e8; }
-  .toggle-cols {
-    width: 34px; height: 34px; border: 1px solid #ccc; border-radius: 3px;
-    background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #344e5c;
-  }
-  .toggle-cols:hover { background: #f5f5f5; }
-  .toggle-cols svg { display: block; width: 20px; height: 20px; }
-  .cols-panel {
-    position: absolute; right: 0; top: 38px; background: #fff; border: 1px solid #ddd;
-    border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.6rem 0.75rem;
-    min-width: 220px; z-index: 10; display: none;
-  }
-  .cols-panel.open { display: block; }
-  .cols-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #344e5c; margin-bottom: 0.4rem; }
-  .cols-panel label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; padding: 0.2rem 0; }
-  .cols-panel input { margin: 0; }
-  .table-wrap { position: relative; }
-  .col-hidden { display: none; }
-
-  .result-card {
-    background: #fff; border: 1px solid #dbe1e5; border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.07); overflow: hidden;
-  }
-  .result-card-main { padding: 1rem; }
-  .result-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
-  .result-card-code { font-size: 0.95rem; font-weight: 900; }
-  .status-badge {
-    display: inline-flex; align-items: center; min-height: 26px; padding: 0.2rem 0.55rem;
-    border-radius: 999px; background: #edf1f3; color: #465760;
-    font-size: 0.72rem; line-height: 1.2; font-weight: 900; text-align: center;
-  }
-  .status-badge.is-ativo { background: #e5f5eb; color: #17683a; }
-  .status-badge.is-inativo { background: #f1f1f1; color: #5c5c5c; }
-  .status-badge.is-suspenso { background: #fff2d8; color: #7c5100; }
-  .result-card-spec { font-size: 0.92rem; line-height: 1.48; color: #292f32; }
-  .result-card-material { margin-top: 0.75rem; font-size: 0.8rem; line-height: 1.4; color: #627079; }
-  .result-card details { border-top: 1px solid #edf0f2; }
-  .result-card summary {
-    min-height: 44px; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 1rem; color: #344e5c; cursor: pointer; font-size: 0.82rem; font-weight: 900;
-    list-style: none;
-  }
-  .result-card summary::-webkit-details-marker { display: none; }
-  .result-card summary::after { content: "+"; font-size: 1.15rem; font-weight: 600; }
-  .result-card details[open] summary::after { content: "\2212"; }
-  .result-card dl { padding: 0 1rem 1rem; display: grid; grid-template-columns: minmax(105px, 0.7fr) 1.3fr; gap: 0.55rem 0.75rem; }
-  .result-card dt { font-size: 0.72rem; color: #738089; font-weight: 900; }
-  .result-card dd { min-width: 0; font-size: 0.78rem; line-height: 1.4; overflow-wrap: anywhere; }
-
-  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
-  .sort-button {
-    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0;
-    border: 0; background: transparent; color: inherit; cursor: pointer;
-    font: inherit; font-weight: 700; text-transform: inherit; white-space: nowrap;
-  }
-  .sort-button:hover, .sort-button:focus-visible { color: #be1e2d; }
-  .sort-button:focus-visible { outline: 2px solid #be1e2d; outline-offset: 3px; border-radius: 2px; }
-  .sort-indicator { min-width: 0.8rem; color: #6f7f87; font-size: 0.9rem; text-align: center; }
-  th[aria-sort="ascending"] .sort-indicator,
-  th[aria-sort="descending"] .sort-indicator { color: #be1e2d; }
-  td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-  tr:hover td { background: #f8f9fa; }
-  td.spec, td.material { max-width: 400px; word-break: break-word; }
-  mark { background: #fff59d; padding: 0; }
-  .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
-  .codigo-link:hover { text-decoration: underline; }
-  .history-link {
-    display: inline-block; color: #344e5c; border: 1px solid #9caab2;
-    border-radius: 3px; padding: 0.3rem 0.5rem; text-decoration: none;
-    white-space: nowrap; font-size: 0.78rem; font-weight: 600;
-  }
-  .history-link:hover { color: #be1e2d; border-color: #be1e2d; background: #fce8ea; }
-  .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
-
-  @media (max-width: 900px) {
-    body.filters-open { overflow: hidden; }
-    header { padding: 0.9rem 1rem; }
-    header h1 { font-size: 1.15rem; line-height: 1.2; }
-    .layout { display: block; min-height: calc(100vh - 60px); }
-    .main { width: 100%; padding: 1rem; overflow-x: visible; }
-    .sidebar {
-      position: fixed; inset: 0 auto 0 0; z-index: 110; width: min(390px, 92vw); min-width: 0;
-      height: 100dvh; padding: 1rem 1rem 5.5rem; border: 0; box-shadow: 12px 0 32px rgba(26,37,43,0.24);
-      transform: translateX(-105%); transition: transform 180ms ease; overscroll-behavior: contain;
-    }
-    body.filters-open .sidebar { transform: translateX(0); }
-    .sidebar-header { position: sticky; top: -1rem; z-index: 4; margin: -1rem -1rem 1rem; padding: 1rem; background: #fff; border-bottom: 1px solid #e4e8eb; }
-    .sidebar-resizer, .facet-resizer { display: none; }
-    .filter-close {
-      display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0;
-      border-radius: 50%; background: #f2f5f7; color: #344e5c; cursor: pointer; font-size: 1.5rem;
-    }
-    .filters-backdrop {
-      display: block; position: fixed; inset: 0; z-index: 100; border: 0;
-      background: rgba(26,37,43,0.52); opacity: 0; pointer-events: none; transition: opacity 180ms ease;
-    }
-    body.filters-open .filters-backdrop { opacity: 1; pointer-events: auto; }
-    .mobile-filter-footer {
-      display: block; position: fixed; left: 0; bottom: 0; width: min(390px, 92vw); z-index: 115;
-      padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom)); background: #fff;
-      border-top: 1px solid #dfe4e7; transform: translateX(-105%); transition: transform 180ms ease;
-    }
-    body.filters-open .mobile-filter-footer { transform: translateX(0); }
-    .mobile-filter-done {
-      width: 100%; min-height: 48px; border: 0; border-radius: 7px; padding: 0.7rem 1rem;
-      background: #be1e2d; color: #fff; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 900;
-    }
-    .mobile-controls {
-      display: block; position: sticky; top: 0; z-index: 20; margin: -1rem -1rem 0.85rem; padding: 0.75rem 1rem 0.7rem;
-      background: rgba(242,245,247,0.96); border-bottom: 1px solid #dde3e6; backdrop-filter: blur(8px);
-    }
-    .mobile-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.65rem; }
-    .mobile-filter-toggle {
-      min-height: 44px; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.8rem;
-      border: 1px solid #b9c3c8; border-radius: 7px; background: #fff; color: #344e5c;
-      cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 900;
-    }
-    .mobile-filter-badge {
-      display: none; min-width: 21px; height: 21px; align-items: center; justify-content: center;
-      border-radius: 999px; background: #be1e2d; color: #fff; font-size: 0.68rem;
-    }
-    .mobile-filter-badge.has-filters { display: inline-flex; }
-    .mobile-results-label { font-size: 0.75rem; color: #64737b; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
-    .search-bar { margin-bottom: 0; }
-    .search-bar input { min-height: 48px; border-radius: 7px; font-size: 16px; }
-    .active-filter-chips { display: flex; gap: 0.45rem; margin-top: 0.6rem; overflow-x: auto; scrollbar-width: none; }
-    .active-filter-chips:empty { display: none; }
-    .active-filter-chips::-webkit-scrollbar { display: none; }
-    .filter-chip {
-      flex: 0 0 auto; min-height: 32px; max-width: 230px; padding: 0.35rem 0.6rem;
-      border: 1px solid #e1aeb3; border-radius: 999px; background: #fff4f5; color: #8c1823;
-      cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .pagination { align-items: center; margin-bottom: 0.8rem; }
-    .pagination button { min-height: 44px; }
-    .toggle-cols { display: none; }
-    .col-natureza, .col-elementos-codigos, .col-linhas, .col-classe, .col-grupo,
-    .col-data-atualizacao, .col-versao, .col-data-criacao, .col-historico { display: none; }
-    .facet-item, .admin-filter li { min-height: 44px; display: flex; align-items: center; }
-    .facet-item { padding-top: 0.55rem; padding-bottom: 0.55rem; }
-  }
-
-  @media (max-width: 700px) {
-    header { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
-    header h1 { max-width: 330px; font-size: 1.03rem; }
-    .updated-at { padding: 0; border: 0; white-space: normal; font-size: 0.7rem; }
-    .main { padding: 0.8rem; }
-    .mobile-controls { margin: -0.8rem -0.8rem 0.75rem; padding-right: 0.8rem; padding-left: 0.8rem; }
-    .pagination { display: grid; grid-template-columns: 1fr; }
-    .pagination .info { font-size: 0.8rem; }
-    .pagination > div { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
-    .pagination button { width: 100%; padding-right: 0.65rem; padding-left: 0.65rem; }
-    .table-wrap { display: none; }
-    .results-cards { display: grid; gap: 0.75rem; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sidebar, .filters-backdrop, .mobile-filter-footer { transition: none; }
-  }
-</style>
-</head>
-<body>
-<div id="loading">Carregando banco de dados...</div>
-<div id="app">
-  <header>
-    <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
-    <div class="updated-at" id="updated-at">Conferindo atualização…</div>
-  </header>
-  <div class="layout">
-    <button id="filters-backdrop" class="filters-backdrop" type="button" aria-label="Fechar filtros" tabindex="-1"></button>
-    <aside class="sidebar" id="filters-panel" aria-label="Filtros do cat&aacute;logo">
-      <div class="sidebar-header">
-        <h2>Filtros</h2>
-        <div class="sidebar-actions">
-          <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button>
-          <button id="filter-close" class="filter-close" type="button" aria-label="Fechar filtros">&times;</button>
-        </div>
-      </div>
-
-      <div class="filter-group">
-        <label>Tipo</label>
-        <ul id="filter-tipo" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="MATERIAL">Material</li>
-          <li data-value="SERVICO">Servi&ccedil;o</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label>Situa&ccedil;&atilde;o</label>
-        <ul id="filter-situacao" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="Ativo">Ativo</li>
-          <li data-value="Inativo">Inativo</li>
-          <li data-value="Suspenso para compra">Suspenso para compra</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label>Agricultura Familiar</label>
-        <ul id="filter-agrifam" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="true">Sim</li>
-          <li data-value="false">N&atilde;o</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label>Sustent&aacute;vel</label>
-        <ul id="filter-sustentavel" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="true">Sim</li>
-          <li data-value="false">N&atilde;o</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label>Ok para Registro de Pre&ccedil;os</label>
-        <ul id="filter-registro-precos" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="true">Sim</li>
-          <li data-value="false">N&atilde;o</li>
-          <li data-value="__empty__">N&atilde;o informado</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label>Itens com Especifica&ccedil;&atilde;o Longa</label>
-        <ul id="filter-especificacao-longa" class="admin-filter">
-          <li class="active" data-value="">Todos</li>
-          <li data-value="true">Sim</li>
-          <li data-value="false">N&atilde;o</li>
-        </ul>
-      </div>
-
-      <div class="filter-group">
-        <label for="natureza">Natureza de Despesa</label>
-        <select id="natureza" multiple placeholder="Buscar natureza..."></select>
-        <div id="natureza-facets" class="facet-list"></div>
-      </div>
-
-      <div class="filter-group">
-        <label for="elementos-item">Elemento-item de despesa</label>
-        <select id="elementos-item" multiple placeholder="Buscar elemento..."></select>
-        <div id="elementos-facets" class="facet-list"></div>
-      </div>
-
-      <div class="filter-group">
-        <label for="linhas-fornecimento">Linhas de Fornecimento</label>
-        <select id="linhas-fornecimento" multiple placeholder="Buscar linha..."></select>
-        <div id="linhas-facets" class="facet-list"></div>
-      </div>
-
-      <div class="filter-group">
-        <label for="grupo">Grupo</label>
-        <select id="grupo" multiple placeholder="Buscar grupo..."></select>
-        <div id="grupo-facets" class="facet-list"></div>
-      </div>
-
-      <div class="filter-group">
-        <label for="classe">Classe</label>
-        <select id="classe" multiple placeholder="Buscar classe..."></select>
-        <div id="classe-facets" class="facet-list"></div>
-      </div>
-
-      <div class="filter-group">
-        <label for="material">Material/Servi&ccedil;o</label>
-        <select id="material" multiple placeholder="Buscar material/servi&ccedil;o..."></select>
-        <div id="material-facets" class="facet-list"></div>
-        <div id="facet-resizer" class="facet-resizer" title="Arraste para ajustar a altura das listas"></div>
-      </div>
-
-    </aside>
-    <div class="mobile-filter-footer">
-      <button id="mobile-filter-done" class="mobile-filter-done" type="button">Mostrar resultados</button>
-    </div>
-    <div id="sidebar-resizer" class="sidebar-resizer" title="Arraste para ajustar a largura do menu"></div>
-
-    <section class="main">
-      <div class="mobile-controls">
-        <div class="mobile-toolbar">
-          <button id="mobile-filter-toggle" class="mobile-filter-toggle" type="button" aria-controls="filters-panel" aria-expanded="false">
-            <span aria-hidden="true">&#9776;</span> Filtros <span id="mobile-filter-badge" class="mobile-filter-badge"></span>
-          </button>
-          <span class="mobile-results-label">Resultados</span>
-        </div>
-        <div class="search-bar">
-          <input type="text" id="spec" placeholder="Buscar por c&oacute;digo ou descri&ccedil;&atilde;o...">
-          <button id="search-clear" class="search-clear" title="Limpar busca" aria-label="Limpar busca">&times;</button>
-        </div>
-        <div id="active-filter-chips" class="active-filter-chips" aria-label="Filtros ativos"></div>
-      </div>
-  <div class="pagination">
-    <span class="info" id="info"></span>
-    <div>
-      <button id="toggle-extra-cols" class="toggle-cols" type="button" title="Selecionar colunas">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="currentColor" d="M12 5c6.5 0 10 7 10 7s-3.5 7-10 7S2 12 2 12s3.5-7 10-7zm0 2C8 7 5.33 10.53 4.38 12 5.33 13.47 8 17 12 17s6.67-3.53 7.62-5C18.67 10.53 16 7 12 7zm0 2.5A2.5 2.5 0 1 1 12 14.5 2.5 2.5 0 0 1 12 9.5z"></path>
-        </svg>
-      </button>
-      <button id="prev" disabled>&laquo; Anterior</button>
-      <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
-    </div>
-  </div>
-  <div id="results-cards" class="results-cards" aria-live="polite"></div>
-  <div class="table-wrap">
-    <div id="cols-panel" class="cols-panel" role="dialog" aria-label="Colunas">
-      <h3>Colunas</h3>
-      <div id="cols-panel-body"></div>
-    </div>
-    <table>
-    <thead>
-      <tr>
-        <th class="col-codigo" data-sort-col="codigo" aria-sort="none"><button class="sort-button" type="button" data-sort="codigo">C&oacute;digo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-spec" data-sort-col="spec" aria-sort="none"><button class="sort-button" type="button" data-sort="spec">Especifica&ccedil;&atilde;o do item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-situacao" data-sort-col="situacao" aria-sort="none"><button class="sort-button" type="button" data-sort="situacao">Situa&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-natureza" data-sort-col="natureza" aria-sort="none"><button class="sort-button" type="button" data-sort="natureza">Natureza de Despesa <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-elementos-codigos" data-sort-col="elementos_codigos" aria-sort="none"><button class="sort-button" type="button" data-sort="elementos_codigos">Elemento-Item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-linhas" data-sort-col="linhas" aria-sort="none"><button class="sort-button" type="button" data-sort="linhas">Linhas de Fornecimento <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-material" data-sort-col="material" aria-sort="none"><button class="sort-button" type="button" data-sort="material">Material/Servi&ccedil;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-classe" data-sort-col="classe" aria-sort="none"><button class="sort-button" type="button" data-sort="classe">Classe <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-grupo" data-sort-col="grupo" aria-sort="none"><button class="sort-button" type="button" data-sort="grupo">Grupo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-data-atualizacao" data-sort-col="data_atualizacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_atualizacao">&Uacute;ltima atualiza&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-versao" data-sort-col="versao" aria-sort="none"><button class="sort-button" type="button" data-sort="versao">Vers&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-data-criacao" data-sort-col="data_criacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_criacao">Data de cria&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
-        <th class="col-historico">Hist&oacute;rico</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-    </table>
-  </div>
-    </section>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-<script>
-(async () => {
-  const PAGE_SIZE = 50;
-  const MOBILE_PAGE_SIZE = 20;
-  const MOBILE_VIEW = window.matchMedia("(max-width: 700px)");
-  const FILTER_DRAWER_VIEW = window.matchMedia("(max-width: 900px)");
-  let publication = null;
-  try {
-    const response = await fetch("atualizacao.json", { cache: "no-store" });
-    if (response.ok) {
-      const value = await response.json();
-      if (/^[a-f0-9]{64}$/.test(value.data_sha256) && !Number.isNaN(Date.parse(value.updated_at))) publication = value;
-    }
-  } catch {}
-  // CATMAS_CICLO_INTEGRADO_V1
-  if (!publication?.cycle_id || !/^[a-f0-9]{64}$/.test(publication.history_sha256)) {
-    throw new Error("Não foi possível confirmar o ciclo conjunto. Recarregue a página.");
-  }
-  const PUBLICATION_UPDATED_AT = publication?.updated_at;
-  const DATABASE_VERSION = publication?.data_sha256 || String(Date.now());
-  const HISTORY_PAGE_VERSION = publication.cycle_id;
-  const PAGE_PARAMS = new URLSearchParams(location.search);
-  const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
-  const HISTORY_EVALUATION = PAGE_PARAMS.get("avaliacao") === "escopos-v1";
-  const SORT_COLUMNS = Object.freeze({
-    codigo: "codigo COLLATE NOCASE",
-    spec: "spec COLLATE NOCASE",
-    situacao: "situacao COLLATE NOCASE",
-    natureza: "natureza COLLATE NOCASE",
-    elementos_codigos: "elementos_codigos COLLATE NOCASE",
-    linhas: "linhas_fornecimento COLLATE NOCASE",
-    material: "material_nome COLLATE NOCASE",
-    classe: "classe COLLATE NOCASE",
-    grupo: "grupo COLLATE NOCASE",
-    data_atualizacao: "data_ultima_atualizacao",
-    versao: "versao",
-    data_criacao: "data_criacao",
-  });
-  let db, hierarchy, page = 0;
-  let sortKey = null;
-  let sortDirection = "asc";
-  let updating = false; // guard against cascading onChange during facet updates
-
-  if (!HISTORY_ENABLED) document.querySelector("th.col-historico")?.remove();
-
-  async function loadCompressedDbBytes(url) {
-    const resp = await fetch(url, { cache: "no-store" });
-    if (!resp.ok) throw new Error("Não foi possível carregar a base do buscador.");
-    const gzBytes = new Uint8Array(await resp.arrayBuffer());
-    if (publication) {
-      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", gzBytes));
-      const received = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
-      if (received !== publication.data_sha256) {
-        document.getElementById("updated-at").textContent = "Publicação em andamento. Recarregue em instantes.";
-        throw new Error("A base publicada ainda não corresponde à atualização. Recarregue em instantes.");
-      }
-    }
-
-    if ("DecompressionStream" in window) {
-      const ds = new DecompressionStream("gzip");
-      const stream = new Blob([gzBytes]).stream().pipeThrough(ds);
-      return new Uint8Array(await new Response(stream).arrayBuffer());
-    }
-    return pako.ungzip(gzBytes);
-  }
-
-  function renderDatabaseUpdatedAt() {
-    if (!PUBLICATION_UPDATED_AT) {
-      document.getElementById("updated-at").textContent = "Data da atualização indisponível";
-      return;
-    }
-    const date = new Date(PUBLICATION_UPDATED_AT);
-    if (Number.isNaN(date.getTime())) return;
-    const formatted = date.toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).replace(",", "");
-    document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
-  }
-
-  // Load sql.js and the compressed database
-  const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
-  const dbBytes = await loadCompressedDbBytes(`data.db.gz?v=${DATABASE_VERSION}`);
-  db = new SQL.Database(dbBytes);
-  renderDatabaseUpdatedAt();
-
-  // Pre-load hierarchy for cascading dropdowns
-  hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;
-
-  // Build lookup maps: short code -> full label
-  const grupoLabels = new Map();
-  const classeLabels = new Map();
-  const materialLabels = new Map();
-  for (const [, g, c] of hierarchy) {
-    const gCode = g.split(" - ")[0].trim();
-    const cCode = c.split(" - ")[0].trim();
-    if (!grupoLabels.has(gCode)) grupoLabels.set(gCode, g);
-    if (!classeLabels.has(cCode)) classeLabels.set(cCode, c);
-  }
-
-  document.getElementById("loading").style.display = "none";
-  document.getElementById("app").style.display = "block";
-
-  // DOM refs
-  const filterTipo       = document.getElementById("filter-tipo");
-  const filterSituacao   = document.getElementById("filter-situacao");
-  const filterAgriFam    = document.getElementById("filter-agrifam");
-  const filterSustentavel = document.getElementById("filter-sustentavel");
-  const filterRegistroPrecos = document.getElementById("filter-registro-precos");
-  const filterEspecificacaoLonga = document.getElementById("filter-especificacao-longa");
-  const naturezaFacets = document.getElementById("natureza-facets");
-  const linhasFacets   = document.getElementById("linhas-facets");
-  const materialFacets = document.getElementById("material-facets");
-  const elementosFacets = document.getElementById("elementos-facets");
-  const specIn       = document.getElementById("spec");
-  const grupoFacets  = document.getElementById("grupo-facets");
-  const classeFacets = document.getElementById("classe-facets");
-  const facetResizer = document.getElementById("facet-resizer");
-  const sidebarEl    = document.querySelector(".sidebar");
-  const sidebarResizer = document.getElementById("sidebar-resizer");
-  const tbody        = document.getElementById("tbody");
-  const resultsCards = document.getElementById("results-cards");
-  const infoEl       = document.getElementById("info");
-  const prevBtn      = document.getElementById("prev");
-  const nextBtn      = document.getElementById("next");
-  const toggleExtraColsBtn = document.getElementById("toggle-extra-cols");
-  const colsPanel = document.getElementById("cols-panel");
-  const colsPanelBody = document.getElementById("cols-panel-body");
-  const clearFiltersBtn = document.getElementById("clear-filters");
-  const searchClearBtn  = document.getElementById("search-clear");
-  const filterToggleBtn = document.getElementById("mobile-filter-toggle");
-  const filterCloseBtn = document.getElementById("filter-close");
-  const filterBackdrop = document.getElementById("filters-backdrop");
-  const mobileFilterDoneBtn = document.getElementById("mobile-filter-done");
-  const mobileFilterBadge = document.getElementById("mobile-filter-badge");
-  const activeFilterChips = document.getElementById("active-filter-chips");
-  const appEl = document.getElementById("app");
-  const tableHead = document.querySelector("thead");
-
-  // Initialize Tom Select on grupo and classe (multi-select)
-  const tsGrupo = new TomSelect("#grupo", {
-    plugins: ["remove_button"],
-    placeholder: "Todos",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  const tsNatureza = new TomSelect("#natureza", {
-    plugins: ["remove_button"],
-    placeholder: "Todas",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  const tsLinhas = new TomSelect("#linhas-fornecimento", {
-    plugins: ["remove_button"],
-    placeholder: "Todas",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  const tsMaterial = new TomSelect("#material", {
-    plugins: ["remove_button"],
-    placeholder: "Todos",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  const tsElementos = new TomSelect("#elementos-item", {
-    plugins: ["remove_button"],
-    placeholder: "Todos",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  const tsClasse = new TomSelect("#classe", {
-    plugins: ["remove_button"],
-    placeholder: "Todos",
-    maxItems: null,
-    sortField: { field: "text", direction: "asc" },
-    onChange: () => { if (!updating) refresh(); },
-  });
-
-  function getAdminFilterValue(ul) {
-    const active = ul.querySelector("li.active");
-    return active ? active.dataset.value : "";
-  }
-
-  function getFilters() {
-    return {
-      tipo:        getAdminFilterValue(filterTipo),
-      situacao:    getAdminFilterValue(filterSituacao),
-      agriFam:     getAdminFilterValue(filterAgriFam),
-      sustentavel: getAdminFilterValue(filterSustentavel),
-      registroPrecos: getAdminFilterValue(filterRegistroPrecos),
-      especificacaoLonga: getAdminFilterValue(filterEspecificacaoLonga),
-      naturezas:   tsNatureza.getValue(),
-      linhas:      tsLinhas.getValue(),
-      materiais:   tsMaterial.getValue(),
-      elementos:   tsElementos.getValue(),
-      grupos:      tsGrupo.getValue(),
-      classes:     tsClasse.getValue(),
-      spec:        specIn.value.trim(),
-    };
-  }
-
-  function pageSize() {
-    return MOBILE_VIEW.matches ? MOBILE_PAGE_SIZE : PAGE_SIZE;
-  }
-
-  function resetAdminFilter(ul) {
-    ul.querySelector("li.active")?.classList.remove("active");
-    ul.querySelector('li[data-value=""]').classList.add("active");
-  }
-
-  function selectedAdminLabel(ul) {
-    const selected = ul.querySelector("li.active");
-    return selected ? selected.textContent.replace(/\s*\([\d.]+\)$/, "").trim() : "";
-  }
-
-  function activeFilterDescriptors() {
-    const descriptors = [];
-    const adminFilters = [
-      [filterTipo, "Tipo"],
-      [filterSituacao, "Situa\u00e7\u00e3o"],
-      [filterAgriFam, "Agricultura familiar"],
-      [filterSustentavel, "Sustent\u00e1vel"],
-      [filterRegistroPrecos, "Registro de pre\u00e7os"],
-      [filterEspecificacaoLonga, "Especifica\u00e7\u00e3o longa"],
-    ];
-    for (const [ul, label] of adminFilters) {
-      if (!getAdminFilterValue(ul)) continue;
-      descriptors.push({
-        label: `${label}: ${selectedAdminLabel(ul)}`,
-        clear: () => { resetAdminFilter(ul); refresh(); },
-      });
-    }
-
-    const selectFilters = [
-      [tsNatureza, "Natureza"],
-      [tsElementos, "Elemento-item"],
-      [tsLinhas, "Linha"],
-      [tsGrupo, "Grupo"],
-      [tsClasse, "Classe"],
-      [tsMaterial, "Material/servi\u00e7o"],
-    ];
-    for (const [select, label] of selectFilters) {
-      const values = select.getValue();
-      if (!values.length) continue;
-      const selection = values.length === 1 ? values[0] : `${values.length} selecionados`;
-      descriptors.push({
-        label: `${label}: ${selection}`,
-        clear: () => { select.clear(true); refresh(); },
-      });
-    }
-    return descriptors;
-  }
-
-  function renderActiveFilters() {
-    const descriptors = activeFilterDescriptors();
-    activeFilterChips.innerHTML = "";
-    for (const descriptor of descriptors) {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "filter-chip";
-      chip.textContent = `${descriptor.label} \u00d7`;
-      chip.title = `Remover ${descriptor.label}`;
-      chip.addEventListener("click", descriptor.clear);
-      activeFilterChips.appendChild(chip);
-    }
-    mobileFilterBadge.textContent = descriptors.length;
-    mobileFilterBadge.classList.toggle("has-filters", descriptors.length > 0);
-  }
-
-  function syncFilterDrawerAccessibility() {
-    if (!FILTER_DRAWER_VIEW.matches) {
-      document.body.classList.remove("filters-open");
-      sidebarEl.removeAttribute("aria-hidden");
-      sidebarEl.removeAttribute("role");
-      sidebarEl.removeAttribute("aria-modal");
-      sidebarEl.inert = false;
-      mobileFilterDoneBtn.tabIndex = -1;
-      filterToggleBtn.setAttribute("aria-expanded", "false");
-      return;
-    }
-    const open = document.body.classList.contains("filters-open");
-    sidebarEl.setAttribute("role", "dialog");
-    sidebarEl.setAttribute("aria-modal", String(open));
-    sidebarEl.setAttribute("aria-hidden", String(!open));
-    sidebarEl.inert = !open;
-    mobileFilterDoneBtn.tabIndex = open ? 0 : -1;
-    filterToggleBtn.setAttribute("aria-expanded", String(open));
-  }
-
-  function openMobileFilters() {
-    if (!FILTER_DRAWER_VIEW.matches) return;
-    document.body.classList.add("filters-open");
-    syncFilterDrawerAccessibility();
-    filterCloseBtn.focus();
-  }
-
-  function closeMobileFilters(restoreFocus = true) {
-    document.body.classList.remove("filters-open");
-    syncFilterDrawerAccessibility();
-    if (restoreFocus && FILTER_DRAWER_VIEW.matches) filterToggleBtn.focus();
-  }
-
-  function codeOf(label) {
-    return label.split(" - ")[0].trim();
-  }
-
-  function fmt(n) {
-    return n.toLocaleString("pt-BR");
-  }
-
-  // Build SQL IN clause with numbered params: (:p0, :p1, ...)
-  function inClause(col, values, prefix, params) {
-    const placeholders = values.map((v, i) => {
-      const key = `:${prefix}${i}`;
-      params[key] = v;
-      return key;
-    });
-    return `${col} IN (${placeholders.join(",")})`;
-  }
-
-  // Build WHERE clause, optionally excluding one facet
-  function buildWhere(exclude) {
-    const f = getFilters();
-    const clauses = [];
-    const params = {};
-
-    if (exclude !== "tipo" && f.tipo)
-      { clauses.push("tipo = :t0"); params[":t0"] = f.tipo; }
-    if (exclude !== "situacao" && f.situacao)
-      { clauses.push("situacao = :si0"); params[":si0"] = f.situacao; }
-    if (exclude !== "agricultura_familiar" && f.agriFam)
-      { clauses.push("agricultura_familiar = :af0"); params[":af0"] = f.agriFam; }
-    if (exclude !== "sustentavel" && f.sustentavel)
-      { clauses.push("sustentavel = :su0"); params[":su0"] = f.sustentavel; }
-    if (exclude !== "ok_registro_precos" && f.registroPrecos) {
-      if (f.registroPrecos === "__empty__") clauses.push("ok_registro_precos = ''");
-      else { clauses.push("ok_registro_precos = :rp0"); params[":rp0"] = f.registroPrecos; }
-    }
-    if (exclude !== "especificacao_longa" && f.especificacaoLonga)
-      { clauses.push("especificacao_longa = :el0"); params[":el0"] = f.especificacaoLonga; }
-    if (exclude !== "natureza" && f.naturezas.length)
-      clauses.push(inClause("natureza", f.naturezas, "n", params));
-    if (exclude !== "linhas_fornecimento" && f.linhas.length)
-      clauses.push(inClause("linhas_fornecimento", f.linhas, "lf", params));
-    if (exclude !== "material" && f.materiais.length)
-      clauses.push(inClause("material_codigo", f.materiais, "m", params));
-    if (exclude !== "elementos_codigos" && f.elementos.length) {
-      const elClause = elementosClause(f.elementos, params);
-      if (elClause) clauses.push(elClause);
-    }
-    if (exclude !== "grupo" && f.grupos.length)
-      clauses.push(inClause("grupo", f.grupos, "g", params));
-    if (exclude !== "classe" && f.classes.length)
-      clauses.push(inClause("classe", f.classes, "c", params));
-    if (f.spec) {
-      const searchClause = buildSearchClause(f.spec, params, "fts");
-      if (searchClause) clauses.push(searchClause);
-    }
-
-    return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
-  }
-
-  // Run a GROUP BY query and return a Map of value -> count
-  function facetCounts(col, exclude) {
-    const { where, params } = buildWhere(exclude);
-    const sql = `SELECT ${col}, COUNT(*) FROM items${where} GROUP BY ${col}`;
-    const result = db.exec(sql, params);
-    const counts = new Map();
-    if (result.length) {
-      for (const [val, count] of result[0].values) counts.set(val, count);
-    }
-    return counts;
-  }
-
-  function formatMaterialLabel(code, name) {
-    if (code && name) return `${code} - ${name}`;
-    return code || name || "";
-  }
-
-  function materialCounts(exclude) {
-    const { where, params } = buildWhere(exclude);
-    const sql = `SELECT material_codigo, material_nome, COUNT(*) FROM items${where} GROUP BY material_codigo, material_nome`;
-    const result = db.exec(sql, params);
-    const counts = new Map();
-    if (result.length) {
-      for (const [code, name, count] of result[0].values) {
-        if (!code) continue;
-        if (!counts.has(code)) counts.set(code, { name, count });
-        else counts.get(code).count += count;
-      }
-    }
-    return counts;
-  }
-
-  function elementCodeOf(label) {
-    if (label == null) return "";
-    const text = String(label).trim();
-    return text.includes(" - ") ? text.split(" - ", 1)[0].trim() : text;
-  }
-
-  function elementosCounts(exclude) {
-    const { where, params } = buildWhere(exclude);
-    const sql = `SELECT elementos_codigos FROM items${where}`;
-    const result = db.exec(sql, params);
-    const counts = new Map();
-    if (result.length) {
-      for (const [val] of result[0].values) {
-        if (!val) continue;
-        const parts = String(val).split(";").map(s => s.trim()).filter(Boolean);
-        for (const p of parts) {
-          const code = elementCodeOf(p);
-          if (!code) continue;
-          const current = counts.get(code);
-          if (current) current.count += 1;
-          else counts.set(code, { label: p, count: 1 });
-        }
-      }
-    }
-    return counts;
-  }
-
-  function updateAdminFilterCounts(ul, col) {
-    const counts = facetCounts(col, col);
-    let total = 0;
-    for (const [, c] of counts) total += c;
-    ul.querySelectorAll("li").forEach(li => {
-      const val = li.dataset.value;
-      const baseText = li.textContent.replace(/\s*\([\d.]+\)$/, "");
-      if (val === "") {
-        li.textContent = `${baseText} (${fmt(total)})`;
-      } else {
-        const count = counts.get(val === "__empty__" ? "" : val) || 0;
-        li.textContent = `${baseText} (${fmt(count)})`;
-      }
-    });
-  }
-
-  // Render a clickable facet list sorted by count desc
-  function renderFacetList(container, items, selected, ts) {
-    // items: [{ code, label, count }], sorted by count desc
-    const selSet = new Set(selected);
-    container.innerHTML = "";
-    for (const { code, label, count } of items) {
-      const div = document.createElement("div");
-      div.className = "facet-item" + (selSet.has(code) ? " selected" : "");
-      div.innerHTML = `<span class="facet-label" title="${esc(label)}">${esc(label)}</span><span class="facet-badge">${fmt(count)}</span>`;
-      div.addEventListener("click", () => {
-        const cur = ts.getValue();
-        if (cur.includes(code)) {
-          ts.removeItem(code, true);
-        } else {
-          ts.addItem(code, true);
-        }
-        refresh();
-      });
-      container.appendChild(div);
-    }
-  }
-
-  function populateSimpleFacet(col, ts, container) {
-    const counts = facetCounts(col, col);
-    const prev = ts.getValue();
-    const items = [];
-    const seen = new Set();
-    for (const [val, count] of counts) {
-      if (val == null || val === "") continue;
-      seen.add(val);
-      items.push({ code: val, label: val, count });
-    }
-    // Ensure selected values remain visible even if count is zero
-    for (const val of prev) {
-      if (seen.has(val)) continue;
-      seen.add(val);
-      items.push({ code: val, label: val, count: 0 });
-    }
-    ts.clearOptions();
-    for (const { code, label, count } of items) {
-      ts.addOption({ value: code, text: `${label} (${fmt(count)})` });
-    }
-    const valid = prev.filter(v => seen.has(v));
-    ts.setValue(valid, true);
-
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    renderFacetList(container, sorted, valid, ts);
-  }
-
-  function populateMateriais() {
-    const counts = materialCounts("material");
-    const prev = tsMaterial.getValue();
-    const items = [];
-    const seen = new Set();
-    materialLabels.clear();
-    for (const [code, data] of counts) {
-      const label = formatMaterialLabel(code, data.name);
-      const selected = prev.includes(code);
-      if (data.count === 0 && !selected) continue;
-      seen.add(code);
-      materialLabels.set(code, label);
-      items.push({ code, label, count: data.count });
-    }
-    for (const code of prev) {
-      if (seen.has(code)) continue;
-      seen.add(code);
-      const label = code;
-      materialLabels.set(code, label);
-      items.push({ code, label, count: 0 });
-    }
-    tsMaterial.clearOptions();
-    for (const { code, label, count } of items) {
-      tsMaterial.addOption({ value: code, text: `${label} (${fmt(count)})` });
-    }
-    const valid = prev.filter(v => seen.has(v));
-    tsMaterial.setValue(valid, true);
-
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    renderFacetList(materialFacets, sorted, valid, tsMaterial);
-  }
-
-  function populateElementos() {
-    const counts = elementosCounts("elementos_codigos");
-    const prev = tsElementos.getValue();
-    const items = [];
-    const seen = new Set();
-    for (const [code, data] of counts) {
-      seen.add(code);
-      items.push({ code, label: data.label, count: data.count });
-    }
-    for (const code of prev) {
-      if (seen.has(code)) continue;
-      seen.add(code);
-      items.push({ code, label: code, count: 0 });
-    }
-    tsElementos.clearOptions();
-    for (const { code, label, count } of items) {
-      tsElementos.addOption({ value: code, text: `${label} (${fmt(count)})` });
-    }
-    const valid = prev.filter(v => seen.has(v));
-    tsElementos.setValue(valid, true);
-
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    renderFacetList(elementosFacets, sorted, valid, tsElementos);
-  }
-
-  // Populate grupo options from hierarchy, with facet counts + visible list
-  function populateGrupos() {
-    const tipoVal = getAdminFilterValue(filterTipo);
-    const tipos = tipoVal ? new Set([tipoVal]) : new Set();
-    const counts = facetCounts("grupo", "grupo");
-    const prev = tsGrupo.getValue();
-    const seen = new Set();
-    const items = [];
-    for (const [t, g] of hierarchy) {
-      if (tipos.size && !tipos.has(t)) continue;
-      const code = codeOf(g);
-      if (seen.has(code)) continue;
-      const count = counts.get(code) || 0;
-      const selected = prev.includes(code);
-      if (count === 0 && !selected) continue;
-      seen.add(code);
-      items.push({ code, label: g, count });
-    }
-    // Update Tom Select options
-    tsGrupo.clearOptions();
-    for (const { code, label, count } of items) {
-      tsGrupo.addOption({ value: code, text: `${label} (${fmt(count)})` });
-    }
-    const valid = prev.filter(v => seen.has(v));
-    tsGrupo.setValue(valid, true);
-
-    // Render visible list sorted by count desc
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    renderFacetList(grupoFacets, sorted, valid, tsGrupo);
-  }
-
-  // Populate classe options from hierarchy, with facet counts + visible list
-  function populateClasses() {
-    const tipoVal = getAdminFilterValue(filterTipo);
-    const tipos  = tipoVal ? new Set([tipoVal]) : new Set();
-    const grupos = new Set(tsGrupo.getValue());
-    const counts = facetCounts("classe", "classe");
-    const prev = tsClasse.getValue();
-    const seen = new Set();
-    const items = [];
-    for (const [t, g, c] of hierarchy) {
-      if (tipos.size && !tipos.has(t)) continue;
-      if (grupos.size && !grupos.has(codeOf(g))) continue;
-      const code = codeOf(c);
-      if (seen.has(code)) continue;
-      const count = counts.get(code) || 0;
-      const selected = prev.includes(code);
-      if (count === 0 && !selected) continue;
-      seen.add(code);
-      items.push({ code, label: c, count });
-    }
-    // Update Tom Select options
-    tsClasse.clearOptions();
-    for (const { code, label, count } of items) {
-      tsClasse.addOption({ value: code, text: `${label} (${fmt(count)})` });
-    }
-    const valid = prev.filter(v => seen.has(v));
-    tsClasse.setValue(valid, true);
-
-    // Render visible list sorted by count desc
-    const sorted = [...items].sort((a, b) => b.count - a.count);
-    renderFacetList(classeFacets, sorted, valid, tsClasse);
-  }
-
-  function buildQuery(countOnly) {
-    const { where, params } = buildWhere();
-    if (countOnly) {
-      return { sql: "SELECT COUNT(*) FROM items" + where, params };
-    }
-    const f = getFilters();
-    let order;
-    if (sortKey) {
-      order = `ORDER BY ${SORT_COLUMNS[sortKey]} ${sortDirection.toUpperCase()}, item_id ASC`;
-    } else if (f.spec) {
-      order = "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid), item_id ASC";
-      params[":fts_rank"] = ftsQuery(f.spec);
-    } else {
-      order = "ORDER BY codigo COLLATE NOCASE ASC, item_id ASC";
-    }
-    return {
-      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
-      params: { ...params, ":limit": pageSize(), ":offset": page * pageSize() },
-    };
-  }
-
-  function statusBadgeClass(value) {
-    const normalized = String(value || "").toLocaleLowerCase("pt-BR");
-    if (normalized === "ativo") return "is-ativo";
-    if (normalized === "inativo") return "is-inativo";
-    if (normalized.includes("suspenso")) return "is-suspenso";
-    return "";
-  }
-
-  function renderMobileCards(data) {
-    resultsCards.innerHTML = "";
-    if (!MOBILE_VIEW.matches) return;
-
-    for (const [codigo, spec, situacao, natureza, elementosCodigos, linhasFornecimento, materialCodigo, materialNome, classe, grupo, itemId, tipo, servicoId, dataAtualizacao, versao, dataCriacao] of data) {
-      const detailUrl = tipo === "SERVICO"
-        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(itemId)}`
-        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(itemId)}`;
-      const materialLabel = materialLabels.get(materialCodigo) || formatMaterialLabel(materialCodigo, materialNome);
-      const card = document.createElement("article");
-      card.className = "result-card";
-      card.innerHTML = `
-        <div class="result-card-main">
-          <div class="result-card-heading">
-            <a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link result-card-code">${esc(codigo)} <span aria-hidden="true">\u2197</span></a>
-            <span class="status-badge ${statusBadgeClass(situacao)}">${esc(situacao)}</span>
-          </div>
-          <p class="result-card-spec">${esc(spec)}</p>
-          <p class="result-card-material">${esc(materialLabel)}</p>
-        </div>
-        <details>
-          <summary>Ver detalhes</summary>
-          <dl>
-            <dt>Natureza</dt><dd>${esc(natureza) || "\u2014"}</dd>
-            <dt>Elemento-item</dt><dd>${esc(elementosCodigos) || "\u2014"}</dd>
-            <dt>Linha</dt><dd>${esc(linhasFornecimento) || "\u2014"}</dd>
-            <dt>Classe</dt><dd>${esc(classeLabels.get(classe) || classe) || "\u2014"}</dd>
-            <dt>Grupo</dt><dd>${esc(grupoLabels.get(grupo) || grupo) || "\u2014"}</dd>
-            <dt>Atualiza\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataAtualizacao)) || "\u2014"}</dd>
-            <dt>Vers\u00e3o</dt><dd>${esc(versao) || "\u2014"}</dd>
-            <dt>Cria\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataCriacao)) || "\u2014"}</dd>
-            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
-          </dl>
-        </details>
-      `;
-      resultsCards.appendChild(card);
-    }
-  }
-
-  function query() {
-    const countQ = buildQuery(true);
-    const total = db.exec(countQ.sql, countQ.params)[0].values[0][0];
-
-    const dataQ = buildQuery(false);
-    const rows = db.exec(dataQ.sql, dataQ.params);
-    const data = rows.length ? rows[0].values : [];
-
-    const currentPageSize = pageSize();
-    const start = total > 0 ? page * currentPageSize + 1 : 0;
-    const end = Math.min((page + 1) * currentPageSize, total);
-    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${fmt(total)} itens`;
-    mobileFilterDoneBtn.textContent = `Mostrar ${fmt(total)} ${total === 1 ? "item" : "itens"}`;
-
-    prevBtn.disabled = page === 0;
-    nextBtn.disabled = end >= total;
-
-    tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao] of data) {
-      const detailUrl = tipo === "SERVICO"
-        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
-        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
-      const materialLabel = materialLabels.get(mat_codigo) || formatMaterialLabel(mat_codigo, mat_nome);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
-        <td class="spec col-spec">${esc(spec)}</td>
-        <td class="col-situacao">${esc(situacao)}</td>
-        <td class="col-natureza">${esc(natureza)}</td>
-        <td class="col-elementos-codigos">${esc(elementos_codigos)}</td>
-        <td class="col-linhas">${esc(linhas_fornec)}</td>
-        <td class="material col-material">${esc(materialLabel)}</td>
-        <td class="classe col-classe">${esc(classeLabels.get(classe) || classe)}</td>
-        <td class="grupo col-grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
-        <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
-        <td class="col-versao">${esc(versao)}</td>
-        <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
-        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
-      `;
-      tbody.appendChild(tr);
-    }
-    renderMobileCards(data);
-
-    // Highlight search terms in all FTS-indexed columns
-    const specTerm = specIn.value.trim();
-    if (specTerm) {
-      new Mark(tbody.querySelectorAll("td.col-codigo, td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
-      new Mark(resultsCards.querySelectorAll(".result-card-code, .result-card-spec, .result-card-material")).mark(specTerm, { separateWordSearch: true });
-    }
-  }
-
-  function ftsQuery(input) {
-    const clean = input.replace(/[()+"*:^]/g, ' ');
-    const terms = clean.trim().split(/\s+/).filter(Boolean);
-    return terms.map(t => '"' + t + '"').join(' ');
-  }
-
-  function digitsOnly(input) {
-    return String(input || "").replace(/\D+/g, "");
-  }
-
-  function stripLeadingZeros(input) {
-    return String(input || "").replace(/^0+/, "") || "0";
-  }
-
-  function codeSearchTerms(input) {
-    return String(input || "")
-      .split(/\s+/)
-      .map(digitsOnly)
-      .filter(term => term.length >= 3);
-  }
-
-  function buildSearchClause(input, params, ftsKey) {
-    const clauses = [];
-    const fts = ftsQuery(input);
-    if (fts) {
-      params[`:${ftsKey}`] = fts;
-      clauses.push(`rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :${ftsKey})`);
-    }
-
-    codeSearchTerms(input).forEach((term, i) => {
-      const rawKey = `:codigo_raw_${i}`;
-      const normKey = `:codigo_norm_${i}`;
-      params[rawKey] = `%${term}%`;
-      params[normKey] = `%${stripLeadingZeros(term)}%`;
-      clauses.push(`(codigo LIKE ${rawKey} OR LTRIM(codigo, '0') LIKE ${normKey})`);
-    });
-
-    return clauses.length ? `(${clauses.join(" OR ")})` : "";
-  }
-
-  function elementosClause(values, params) {
-    const parts = [];
-    values.forEach((code, i) => {
-      const key = `:e${i}`;
-      params[`${key}b`] = code;
-      params[`${key}sp`] = `${code}; %`;
-      params[`${key}ss`] = `%; ${code}`;
-      params[`${key}d1`] = `${code} - %`;
-      params[`${key}d2`] = `%; ${code} - %`;
-      parts.push(
-        `(elementos_codigos = ${key}b OR elementos_codigos LIKE ${key}sp OR elementos_codigos LIKE ${key}ss OR elementos_codigos LIKE ${key}d1 OR elementos_codigos LIKE ${key}d2)`
-      );
-    });
-    return parts.length ? `(${parts.join(" OR ")})` : "";
-  }
-
-  function esc(s) {
-    if (s == null) return "";
-    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-
-  function formatDateTime(value) {
-    if (!value) return "";
-    const date = new Date(String(value).trim());
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).replace(",", "");
-  }
-
-  function hasActiveFilters() {
-    const f = getFilters();
-    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.registroPrecos || f.especificacaoLonga || f.naturezas.length ||
-      f.linhas.length || f.materiais.length || f.elementos.length || f.grupos.length || f.classes.length;
-  }
-
-  function resetAllFilters() {
-    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
-      ul.querySelector("li.active")?.classList.remove("active");
-      ul.querySelector('li[data-value=""]').classList.add("active");
-    }
-    tsNatureza.clear(true);
-    tsLinhas.clear(true);
-    tsMaterial.clear(true);
-    tsElementos.clear(true);
-    tsGrupo.clear(true);
-    tsClasse.clear(true);
-    refresh();
-  }
-
-  // Full refresh: update data table + all facet counts
-  function refresh() {
-    page = 0;
-    updating = true;
-    updateAdminFilterCounts(filterTipo, "tipo");
-    updateAdminFilterCounts(filterSituacao, "situacao");
-    updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
-    updateAdminFilterCounts(filterSustentavel, "sustentavel");
-    updateAdminFilterCounts(filterRegistroPrecos, "ok_registro_precos");
-    updateAdminFilterCounts(filterEspecificacaoLonga, "especificacao_longa");
-    populateSimpleFacet("natureza", tsNatureza, naturezaFacets);
-    populateSimpleFacet("linhas_fornecimento", tsLinhas, linhasFacets);
-    populateMateriais();
-    query();
-    populateElementos();
-    populateGrupos();
-    populateClasses();
-    updating = false;
-    clearFiltersBtn.hidden = !hasActiveFilters();
-    searchClearBtn.style.display = specIn.value ? "block" : "none";
-    renderActiveFilters();
-  }
-
-  // Debounce for text inputs
-  let debounceTimer;
-  function debouncedRefresh() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(refresh, 300);
-  }
-
-  // Event listeners
-  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
-    ul.addEventListener("click", e => {
-      const li = e.target.closest("li");
-      if (!li) return;
-      ul.querySelector("li.active")?.classList.remove("active");
-      li.classList.add("active");
-      refresh();
-    });
-  }
-  specIn.addEventListener("input", debouncedRefresh);
-  clearFiltersBtn.addEventListener("click", resetAllFilters);
-  searchClearBtn.addEventListener("click", () => { specIn.value = ""; refresh(); });
-  filterToggleBtn.addEventListener("click", openMobileFilters);
-  filterCloseBtn.addEventListener("click", () => closeMobileFilters());
-  filterBackdrop.addEventListener("click", () => closeMobileFilters());
-  mobileFilterDoneBtn.addEventListener("click", () => closeMobileFilters());
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && document.body.classList.contains("filters-open")) closeMobileFilters();
-  });
-  FILTER_DRAWER_VIEW.addEventListener("change", () => closeMobileFilters(false));
-  MOBILE_VIEW.addEventListener("change", () => { page = 0; query(); });
-  syncFilterDrawerAccessibility();
-
-  prevBtn.addEventListener("click", () => { page--; query(); });
-  nextBtn.addEventListener("click", () => { page++; query(); });
-
-  function updateSortHeaders() {
-    tableHead.querySelectorAll("th[data-sort-col]").forEach(header => {
-      const active = header.dataset.sortCol === sortKey;
-      const direction = active ? sortDirection : null;
-      header.setAttribute("aria-sort", direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none");
-      header.querySelector(".sort-indicator").textContent = direction === "asc" ? "▲" : direction === "desc" ? "▼" : "↕";
-      const button = header.querySelector(".sort-button");
-      const label = button.textContent.replace(/[▲▼↕]/g, "").trim();
-      button.setAttribute("aria-label", active
-        ? `${label}: ordem ${direction === "asc" ? "crescente" : "decrescente"}. Clique para inverter.`
-        : `Ordenar por ${label}`);
-    });
-  }
-
-  tableHead.addEventListener("click", event => {
-    const button = event.target.closest("button[data-sort]");
-    if (!button) return;
-    const nextKey = button.dataset.sort;
-    if (!Object.prototype.hasOwnProperty.call(SORT_COLUMNS, nextKey)) return;
-    if (sortKey === nextKey) sortDirection = sortDirection === "asc" ? "desc" : "asc";
-    else {
-      sortKey = nextKey;
-      sortDirection = "asc";
-    }
-    page = 0;
-    updateSortHeaders();
-    query();
-  });
-  updateSortHeaders();
-
-  const columns = [
-    { key: "codigo", label: "Codigo", cls: "col-codigo" },
-    { key: "spec", label: "Especificacao do item", cls: "col-spec" },
-    { key: "situacao", label: "Situacao", cls: "col-situacao" },
-    { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },
-    { key: "elementos_codigos", label: "Elemento-Item", cls: "col-elementos-codigos" },
-    { key: "linhas", label: "Linhas de Fornecimento", cls: "col-linhas" },
-    { key: "material", label: "Material/Servico", cls: "col-material" },
-    { key: "classe", label: "Classe", cls: "col-classe" },
-    { key: "grupo", label: "Grupo", cls: "col-grupo" },
-    { key: "data_atualizacao", label: "Ultima atualizacao", cls: "col-data-atualizacao" },
-    { key: "versao", label: "Versao", cls: "col-versao" },
-    { key: "data_criacao", label: "Data de criacao", cls: "col-data-criacao" },
-    ...(HISTORY_ENABLED
-      ? [{ key: "historico", label: "Historico", cls: "col-historico" }]
-      : []),
-  ];
-
-  function loadHiddenCols() {
-    const raw = localStorage.getItem("catmas.hiddenCols");
-    if (!raw) return new Set();
-    try { return new Set(JSON.parse(raw)); } catch { return new Set(); }
-  }
-
-  function saveHiddenCols(set) {
-    localStorage.setItem("catmas.hiddenCols", JSON.stringify([...set]));
-  }
-
-  function applyHiddenCols(set) {
-    for (const { cls } of columns) {
-      document.querySelectorAll(`.${cls}`).forEach(el => {
-        if (set.has(cls)) el.classList.add("col-hidden");
-        else el.classList.remove("col-hidden");
-      });
-    }
-  }
-
-  function renderColsPanel() {
-    const hidden = loadHiddenCols();
-    colsPanelBody.innerHTML = "";
-    for (const col of columns) {
-      const id = `col-toggle-${col.key}`;
-      const row = document.createElement("label");
-      row.innerHTML = `<input type="checkbox" id="${id}" ${hidden.has(col.cls) ? "" : "checked"}> ${col.label}`;
-      row.querySelector("input").addEventListener("change", (e) => {
-        const h = loadHiddenCols();
-        if (e.target.checked) h.delete(col.cls);
-        else h.add(col.cls);
-        saveHiddenCols(h);
-        applyHiddenCols(h);
-      });
-      colsPanelBody.appendChild(row);
-    }
-    applyHiddenCols(hidden);
-  }
-
-  toggleExtraColsBtn.addEventListener("click", () => {
-    colsPanel.classList.toggle("open");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (colsPanel.contains(e.target) || toggleExtraColsBtn.contains(e.target)) return;
-    colsPanel.classList.remove("open");
-  });
-
-  // Drag to resize facet lists height
-  let resizing = false;
-  let startY = 0;
-  let startHeight = 0;
-  const minFacetHeight = 120;
-  const maxFacetHeight = 600;
-
-  function currentFacetHeight() {
-    const h = parseFloat(getComputedStyle(grupoFacets).maxHeight) || 220;
-    return Math.max(minFacetHeight, Math.min(maxFacetHeight, h));
-  }
-
-  facetResizer.addEventListener("mousedown", (e) => {
-    resizing = true;
-    startY = e.clientY;
-    startHeight = currentFacetHeight();
-    document.body.style.userSelect = "none";
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!resizing) return;
-    const delta = e.clientY - startY;
-    const next = Math.max(minFacetHeight, Math.min(maxFacetHeight, startHeight + delta));
-    document.documentElement.style.setProperty("--facet-max-height", `${next}px`);
-  });
-
-  window.addEventListener("mouseup", () => {
-    if (!resizing) return;
-    resizing = false;
-    document.body.style.userSelect = "";
-  });
-
-  // Drag to resize sidebar width
-  let resizingSidebar = false;
-  let startX = 0;
-  let startWidth = 0;
-  const minSidebarWidth = 260;
-  const maxSidebarWidth = 520;
-
-  function currentSidebarWidth() {
-    return sidebarEl.getBoundingClientRect().width;
-  }
-
-  sidebarResizer.addEventListener("mousedown", (e) => {
-    resizingSidebar = true;
-    startX = e.clientX;
-    startWidth = currentSidebarWidth();
-    document.body.style.userSelect = "none";
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!resizingSidebar) return;
-    const delta = e.clientX - startX;
-    const next = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, startWidth + delta));
-    sidebarEl.style.width = `${next}px`;
-    sidebarEl.style.minWidth = `${next}px`;
-  });
-
-  window.addEventListener("mouseup", () => {
-    if (!resizingSidebar) return;
-    resizingSidebar = false;
-    document.body.style.userSelect = "";
-  });
-
-  // Initial render
-  renderColsPanel();
-  refresh();
-})();
-</script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Raleway', sans-serif; background: #f2f5f7; color: #3c3c3b; }
+  #loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 1.2rem; color: #666; }
+  #app { display: none; }
+
+  header {
+    background: #be1e2d; color: #fff; padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  header h1 { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; }
+  .updated-at {
+    border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
+    padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 600;
+    white-space: nowrap; color: rgba(255,255,255,0.95);
+  }
+
+  .layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
+
+  .sidebar {
+    width: 320px; min-width: 320px; background: #fff;
+    border-right: 1px solid #ddd; padding: 1.25rem;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .sidebar-resizer {
+    width: 8px; cursor: ew-resize; background: #f2f5f7;
+    border-right: 1px solid #ddd;
+  }
+  .sidebar h2 { font-size: 0.85rem; text-transform: uppercase; color: #344e5c; letter-spacing: 0.05em; }
+  .sidebar-actions { display: flex; align-items: center; gap: 0.6rem; }
+  .filter-close, .filters-backdrop, .mobile-filter-footer { display: none; }
+  .filter-group { margin-bottom: 1.25rem; }
+  .filter-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .filter-group select,
+  .filter-group input[type="text"] {
+    width: 100%; padding: 0.5rem; border: 1px solid #949494; border-radius: 3px;
+    font-size: 0.9rem; background: #fff;
+  }
+  .filter-group .ts-wrapper { font-size: 0.9rem; }
+  .filter-group .ts-control { border-radius: 3px; }
+  .admin-filter { list-style: none; margin-top: 0.25rem; }
+  .admin-filter li {
+    padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.85rem;
+    border-left: 3px solid transparent; color: #333;
+  }
+  .admin-filter li:hover { background: #f5f8fc; }
+  .admin-filter li.active { border-left-color: #be1e2d; color: #be1e2d; font-weight: 600; }
+
+  :root { --facet-max-height: 220px; }
+  .facet-list { max-height: var(--facet-max-height); overflow-y: auto; margin-top: 0.4rem; border: 1px solid #e0e0e0; border-radius: 4px; }
+  .facet-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.82rem;
+    border-bottom: 1px solid #f0f0f0; user-select: none;
+  }
+  .facet-item:last-child { border-bottom: none; }
+  .facet-item:hover { background: #f5f8fc; }
+  .facet-item.selected { background: #fce8ea; font-weight: 600; }
+  .facet-item .facet-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facet-item .facet-badge { color: #888; font-size: 0.8em; margin-left: 0.5rem; white-space: nowrap; }
+  .facet-resizer {
+    height: 10px; margin: 0.6rem 0 0.2rem;
+    background: #f2f5f7; border: 1px solid #e0e0e0; border-radius: 6px;
+    cursor: ns-resize;
+  }
+
+  .main { flex: 1; padding: 1.25rem; overflow-x: auto; }
+
+  .mobile-controls { display: contents; }
+  .mobile-toolbar, .active-filter-chips, .results-cards { display: none; }
+
+  .clear-filters {
+    display: inline-block; font-size: 0.82rem; color: #be1e2d; cursor: pointer;
+    border: none; background: none; padding: 0; text-decoration: underline;
+  }
+  .clear-filters:hover { color: #ef071b; }
+  .clear-filters[hidden] { display: none; }
+
+  .search-bar { margin-bottom: 1rem; position: relative; }
+  .search-bar input {
+    width: 100%; padding: 0.6rem 2rem 0.6rem 0.75rem; border: 1px solid #949494; border-radius: 3px;
+    font-size: 1rem; background: #fff;
+  }
+  .search-clear {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; color: #999; font-size: 1.1rem;
+    line-height: 1; padding: 0.2rem; display: none;
+  }
+  .search-clear:hover { color: #be1e2d; }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .pagination .info { font-size: 0.9rem; color: #3c3c3b; }
+  .pagination button {
+    padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 3px;
+    background: #fff; cursor: pointer; font-size: 0.9rem;
+  }
+  .pagination button:disabled { opacity: 0.4; cursor: default; }
+  .pagination button:not(:disabled):hover { background: #e8e8e8; }
+  .toggle-cols {
+    width: 34px; height: 34px; border: 1px solid #ccc; border-radius: 3px;
+    background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #344e5c;
+  }
+  .toggle-cols:hover { background: #f5f5f5; }
+  .toggle-cols svg { display: block; width: 20px; height: 20px; }
+  .cols-panel {
+    position: absolute; right: 0; top: 38px; background: #fff; border: 1px solid #ddd;
+    border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.6rem 0.75rem;
+    min-width: 220px; z-index: 10; display: none;
+  }
+  .cols-panel.open { display: block; }
+  .cols-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #344e5c; margin-bottom: 0.4rem; }
+  .cols-panel label { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; padding: 0.2rem 0; }
+  .cols-panel input { margin: 0; }
+  .table-wrap { position: relative; }
+  .col-hidden { display: none; }
+
+  .result-card {
+    background: #fff; border: 1px solid #dbe1e5; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07); overflow: hidden;
+  }
+  .result-card-main { padding: 1rem; }
+  .result-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .result-card-code { font-size: 0.95rem; font-weight: 900; }
+  .status-badge {
+    display: inline-flex; align-items: center; min-height: 26px; padding: 0.2rem 0.55rem;
+    border-radius: 999px; background: #edf1f3; color: #465760;
+    font-size: 0.72rem; line-height: 1.2; font-weight: 900; text-align: center;
+  }
+  .status-badge.is-ativo { background: #e5f5eb; color: #17683a; }
+  .status-badge.is-inativo { background: #f1f1f1; color: #5c5c5c; }
+  .status-badge.is-suspenso { background: #fff2d8; color: #7c5100; }
+  .result-card-spec { font-size: 0.92rem; line-height: 1.48; color: #292f32; }
+  .result-card-material { margin-top: 0.75rem; font-size: 0.8rem; line-height: 1.4; color: #627079; }
+  .result-card details { border-top: 1px solid #edf0f2; }
+  .result-card summary {
+    min-height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1rem; color: #344e5c; cursor: pointer; font-size: 0.82rem; font-weight: 900;
+    list-style: none;
+  }
+  .result-card summary::-webkit-details-marker { display: none; }
+  .result-card summary::after { content: "+"; font-size: 1.15rem; font-weight: 600; }
+  .result-card details[open] summary::after { content: "\2212"; }
+  .result-card dl { padding: 0 1rem 1rem; display: grid; grid-template-columns: minmax(105px, 0.7fr) 1.3fr; gap: 0.55rem 0.75rem; }
+  .result-card dt { font-size: 0.72rem; color: #738089; font-weight: 900; }
+  .result-card dd { min-width: 0; font-size: 0.78rem; line-height: 1.4; overflow-wrap: anywhere; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th { background: #f2f5f7; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; text-transform: uppercase; color: #344e5c; border-bottom: 2px solid #344e5c; white-space: nowrap; }
+  .sort-button {
+    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0;
+    border: 0; background: transparent; color: inherit; cursor: pointer;
+    font: inherit; font-weight: 700; text-transform: inherit; white-space: nowrap;
+  }
+  .sort-button:hover, .sort-button:focus-visible { color: #be1e2d; }
+  .sort-button:focus-visible { outline: 2px solid #be1e2d; outline-offset: 3px; border-radius: 2px; }
+  .sort-indicator { min-width: 0.8rem; color: #6f7f87; font-size: 0.9rem; text-align: center; }
+  th[aria-sort="ascending"] .sort-indicator,
+  th[aria-sort="descending"] .sort-indicator { color: #be1e2d; }
+  td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+  tr:hover td { background: #f8f9fa; }
+  td.spec, td.material { max-width: 400px; word-break: break-word; }
+  mark { background: #fff59d; padding: 0; }
+  .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
+  .codigo-link:hover { text-decoration: underline; }
+  .history-link {
+    display: inline-block; color: #344e5c; border: 1px solid #9caab2;
+    border-radius: 3px; padding: 0.3rem 0.5rem; text-decoration: none;
+    white-space: nowrap; font-size: 0.78rem; font-weight: 600;
+  }
+  .history-link:hover { color: #be1e2d; border-color: #be1e2d; background: #fce8ea; }
+  .icon-external { width: 0.7em; height: 0.7em; vertical-align: baseline; margin-left: 0.15em; }
+
+  @media (max-width: 900px) {
+    body.filters-open { overflow: hidden; }
+    header { padding: 0.9rem 1rem; }
+    header h1 { font-size: 1.15rem; line-height: 1.2; }
+    .layout { display: block; min-height: calc(100vh - 60px); }
+    .main { width: 100%; padding: 1rem; overflow-x: visible; }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; z-index: 110; width: min(390px, 92vw); min-width: 0;
+      height: 100dvh; padding: 1rem 1rem 5.5rem; border: 0; box-shadow: 12px 0 32px rgba(26,37,43,0.24);
+      transform: translateX(-105%); transition: transform 180ms ease; overscroll-behavior: contain;
+    }
+    body.filters-open .sidebar { transform: translateX(0); }
+    .sidebar-header { position: sticky; top: -1rem; z-index: 4; margin: -1rem -1rem 1rem; padding: 1rem; background: #fff; border-bottom: 1px solid #e4e8eb; }
+    .sidebar-resizer, .facet-resizer { display: none; }
+    .filter-close {
+      display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0;
+      border-radius: 50%; background: #f2f5f7; color: #344e5c; cursor: pointer; font-size: 1.5rem;
+    }
+    .filters-backdrop {
+      display: block; position: fixed; inset: 0; z-index: 100; border: 0;
+      background: rgba(26,37,43,0.52); opacity: 0; pointer-events: none; transition: opacity 180ms ease;
+    }
+    body.filters-open .filters-backdrop { opacity: 1; pointer-events: auto; }
+    .mobile-filter-footer {
+      display: block; position: fixed; left: 0; bottom: 0; width: min(390px, 92vw); z-index: 115;
+      padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom)); background: #fff;
+      border-top: 1px solid #dfe4e7; transform: translateX(-105%); transition: transform 180ms ease;
+    }
+    body.filters-open .mobile-filter-footer { transform: translateX(0); }
+    .mobile-filter-done {
+      width: 100%; min-height: 48px; border: 0; border-radius: 7px; padding: 0.7rem 1rem;
+      background: #be1e2d; color: #fff; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 900;
+    }
+    .mobile-controls {
+      display: block; position: sticky; top: 0; z-index: 20; margin: -1rem -1rem 0.85rem; padding: 0.75rem 1rem 0.7rem;
+      background: rgba(242,245,247,0.96); border-bottom: 1px solid #dde3e6; backdrop-filter: blur(8px);
+    }
+    .mobile-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.65rem; }
+    .mobile-filter-toggle {
+      min-height: 44px; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.8rem;
+      border: 1px solid #b9c3c8; border-radius: 7px; background: #fff; color: #344e5c;
+      cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 900;
+    }
+    .mobile-filter-badge {
+      display: none; min-width: 21px; height: 21px; align-items: center; justify-content: center;
+      border-radius: 999px; background: #be1e2d; color: #fff; font-size: 0.68rem;
+    }
+    .mobile-filter-badge.has-filters { display: inline-flex; }
+    .mobile-results-label { font-size: 0.75rem; color: #64737b; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+    .search-bar { margin-bottom: 0; }
+    .search-bar input { min-height: 48px; border-radius: 7px; font-size: 16px; }
+    .active-filter-chips { display: flex; gap: 0.45rem; margin-top: 0.6rem; overflow-x: auto; scrollbar-width: none; }
+    .active-filter-chips:empty { display: none; }
+    .active-filter-chips::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex: 0 0 auto; min-height: 32px; max-width: 230px; padding: 0.35rem 0.6rem;
+      border: 1px solid #e1aeb3; border-radius: 999px; background: #fff4f5; color: #8c1823;
+      cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pagination { align-items: center; margin-bottom: 0.8rem; }
+    .pagination button { min-height: 44px; }
+    .toggle-cols { display: none; }
+    .col-natureza, .col-elementos-codigos, .col-linhas, .col-classe, .col-grupo,
+    .col-data-atualizacao, .col-versao, .col-data-criacao, .col-historico { display: none; }
+    .facet-item, .admin-filter li { min-height: 44px; display: flex; align-items: center; }
+    .facet-item { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+  }
+
+  @media (max-width: 700px) {
+    header { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
+    header h1 { max-width: 330px; font-size: 1.03rem; }
+    .updated-at { padding: 0; border: 0; white-space: normal; font-size: 0.7rem; }
+    .main { padding: 0.8rem; }
+    .mobile-controls { margin: -0.8rem -0.8rem 0.75rem; padding-right: 0.8rem; padding-left: 0.8rem; }
+    .pagination { display: grid; grid-template-columns: 1fr; }
+    .pagination .info { font-size: 0.8rem; }
+    .pagination > div { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+    .pagination button { width: 100%; padding-right: 0.65rem; padding-left: 0.65rem; }
+    .table-wrap { display: none; }
+    .results-cards { display: grid; gap: 0.75rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar, .filters-backdrop, .mobile-filter-footer { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="loading">Carregando banco de dados...</div>
+<div id="app">
+  <header>
+    <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
+    <div class="updated-at" id="updated-at">Conferindo atualização…</div>
+  </header>
+  <div class="layout">
+    <button id="filters-backdrop" class="filters-backdrop" type="button" aria-label="Fechar filtros" tabindex="-1"></button>
+    <aside class="sidebar" id="filters-panel" aria-label="Filtros do cat&aacute;logo">
+      <div class="sidebar-header">
+        <h2>Filtros</h2>
+        <div class="sidebar-actions">
+          <button id="clear-filters" class="clear-filters" hidden>Limpar filtros</button>
+          <button id="filter-close" class="filter-close" type="button" aria-label="Fechar filtros">&times;</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Tipo</label>
+        <ul id="filter-tipo" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="MATERIAL">Material</li>
+          <li data-value="SERVICO">Servi&ccedil;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Situa&ccedil;&atilde;o</label>
+        <ul id="filter-situacao" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="Ativo">Ativo</li>
+          <li data-value="Inativo">Inativo</li>
+          <li data-value="Suspenso para compra">Suspenso para compra</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Agricultura Familiar</label>
+        <ul id="filter-agrifam" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Sustent&aacute;vel</label>
+        <ul id="filter-sustentavel" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Ok para Registro de Pre&ccedil;os</label>
+        <ul id="filter-registro-precos" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+          <li data-value="__empty__">N&atilde;o informado</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label>Itens com Especifica&ccedil;&atilde;o Longa</label>
+        <ul id="filter-especificacao-longa" class="admin-filter">
+          <li class="active" data-value="">Todos</li>
+          <li data-value="true">Sim</li>
+          <li data-value="false">N&atilde;o</li>
+        </ul>
+      </div>
+
+      <div class="filter-group">
+        <label for="natureza">Natureza de Despesa</label>
+        <select id="natureza" multiple placeholder="Buscar natureza..."></select>
+        <div id="natureza-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="elementos-item">Elemento-item de despesa</label>
+        <select id="elementos-item" multiple placeholder="Buscar elemento..."></select>
+        <div id="elementos-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="linhas-fornecimento">Linhas de Fornecimento</label>
+        <select id="linhas-fornecimento" multiple placeholder="Buscar linha..."></select>
+        <div id="linhas-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="grupo">Grupo</label>
+        <select id="grupo" multiple placeholder="Buscar grupo..."></select>
+        <div id="grupo-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="classe">Classe</label>
+        <select id="classe" multiple placeholder="Buscar classe..."></select>
+        <div id="classe-facets" class="facet-list"></div>
+      </div>
+
+      <div class="filter-group">
+        <label for="material">Material/Servi&ccedil;o</label>
+        <select id="material" multiple placeholder="Buscar material/servi&ccedil;o..."></select>
+        <div id="material-facets" class="facet-list"></div>
+        <div id="facet-resizer" class="facet-resizer" title="Arraste para ajustar a altura das listas"></div>
+      </div>
+
+    </aside>
+    <div class="mobile-filter-footer">
+      <button id="mobile-filter-done" class="mobile-filter-done" type="button">Mostrar resultados</button>
+    </div>
+    <div id="sidebar-resizer" class="sidebar-resizer" title="Arraste para ajustar a largura do menu"></div>
+
+    <section class="main">
+      <div class="mobile-controls">
+        <div class="mobile-toolbar">
+          <button id="mobile-filter-toggle" class="mobile-filter-toggle" type="button" aria-controls="filters-panel" aria-expanded="false">
+            <span aria-hidden="true">&#9776;</span> Filtros <span id="mobile-filter-badge" class="mobile-filter-badge"></span>
+          </button>
+          <span class="mobile-results-label">Resultados</span>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="spec" placeholder="Buscar por c&oacute;digo ou descri&ccedil;&atilde;o...">
+          <button id="search-clear" class="search-clear" title="Limpar busca" aria-label="Limpar busca">&times;</button>
+        </div>
+        <div id="active-filter-chips" class="active-filter-chips" aria-label="Filtros ativos"></div>
+      </div>
+  <div class="pagination">
+    <span class="info" id="info"></span>
+    <div>
+      <button id="toggle-extra-cols" class="toggle-cols" type="button" title="Selecionar colunas">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M12 5c6.5 0 10 7 10 7s-3.5 7-10 7S2 12 2 12s3.5-7 10-7zm0 2C8 7 5.33 10.53 4.38 12 5.33 13.47 8 17 12 17s6.67-3.53 7.62-5C18.67 10.53 16 7 12 7zm0 2.5A2.5 2.5 0 1 1 12 14.5 2.5 2.5 0 0 1 12 9.5z"></path>
+        </svg>
+      </button>
+      <button id="prev" disabled>&laquo; Anterior</button>
+      <button id="next" disabled>Pr&oacute;ximo &raquo;</button>
+    </div>
+  </div>
+  <div id="results-cards" class="results-cards" aria-live="polite"></div>
+  <div class="table-wrap">
+    <div id="cols-panel" class="cols-panel" role="dialog" aria-label="Colunas">
+      <h3>Colunas</h3>
+      <div id="cols-panel-body"></div>
+    </div>
+    <table>
+    <thead>
+      <tr>
+        <th class="col-codigo" data-sort-col="codigo" aria-sort="none"><button class="sort-button" type="button" data-sort="codigo">C&oacute;digo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-spec" data-sort-col="spec" aria-sort="none"><button class="sort-button" type="button" data-sort="spec">Especifica&ccedil;&atilde;o do item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-situacao" data-sort-col="situacao" aria-sort="none"><button class="sort-button" type="button" data-sort="situacao">Situa&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-natureza" data-sort-col="natureza" aria-sort="none"><button class="sort-button" type="button" data-sort="natureza">Natureza de Despesa <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-elementos-codigos" data-sort-col="elementos_codigos" aria-sort="none"><button class="sort-button" type="button" data-sort="elementos_codigos">Elemento-Item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-linhas" data-sort-col="linhas" aria-sort="none"><button class="sort-button" type="button" data-sort="linhas">Linhas de Fornecimento <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-material" data-sort-col="material" aria-sort="none"><button class="sort-button" type="button" data-sort="material">Material/Servi&ccedil;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-classe" data-sort-col="classe" aria-sort="none"><button class="sort-button" type="button" data-sort="classe">Classe <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-grupo" data-sort-col="grupo" aria-sort="none"><button class="sort-button" type="button" data-sort="grupo">Grupo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-data-atualizacao" data-sort-col="data_atualizacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_atualizacao">&Uacute;ltima atualiza&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-versao" data-sort-col="versao" aria-sort="none"><button class="sort-button" type="button" data-sort="versao">Vers&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-data-criacao" data-sort-col="data_criacao" aria-sort="none"><button class="sort-button" type="button" data-sort="data_criacao">Data de cria&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-historico">Hist&oacute;rico</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+    </table>
+  </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+(async () => {
+  const PAGE_SIZE = 50;
+  const MOBILE_PAGE_SIZE = 20;
+  const MOBILE_VIEW = window.matchMedia("(max-width: 700px)");
+  const FILTER_DRAWER_VIEW = window.matchMedia("(max-width: 900px)");
+  let publication = null;
+  try {
+    const response = await fetch("atualizacao.json", { cache: "no-store" });
+    if (response.ok) {
+      const value = await response.json();
+      if (/^[a-f0-9]{64}$/.test(value.data_sha256) && !Number.isNaN(Date.parse(value.updated_at))) publication = value;
+    }
+  } catch {}
+  // CATMAS_CICLO_INTEGRADO_V1
+  if (!publication?.cycle_id || !/^[a-f0-9]{64}$/.test(publication.history_sha256)) {
+    throw new Error("Não foi possível confirmar o ciclo conjunto. Recarregue a página.");
+  }
+  const PUBLICATION_UPDATED_AT = publication?.updated_at;
+  const DATABASE_VERSION = publication?.data_sha256 || String(Date.now());
+  const HISTORY_PAGE_VERSION = publication.cycle_id;
+  const PAGE_PARAMS = new URLSearchParams(location.search);
+  const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
+  const HISTORY_EVALUATION = PAGE_PARAMS.get("avaliacao") === "escopos-v1";
+  const SORT_COLUMNS = Object.freeze({
+    codigo: "codigo COLLATE NOCASE",
+    spec: "spec COLLATE NOCASE",
+    situacao: "situacao COLLATE NOCASE",
+    natureza: "natureza COLLATE NOCASE",
+    elementos_codigos: "elementos_codigos COLLATE NOCASE",
+    linhas: "linhas_fornecimento COLLATE NOCASE",
+    material: "material_nome COLLATE NOCASE",
+    classe: "classe COLLATE NOCASE",
+    grupo: "grupo COLLATE NOCASE",
+    data_atualizacao: "data_ultima_atualizacao",
+    versao: "versao",
+    data_criacao: "data_criacao",
+  });
+  let db, hierarchy, page = 0;
+  let sortKey = null;
+  let sortDirection = "asc";
+  let updating = false; // guard against cascading onChange during facet updates
+
+  if (!HISTORY_ENABLED) document.querySelector("th.col-historico")?.remove();
+
+  async function loadCompressedDbBytes(url) {
+    const resp = await fetch(url, { cache: "no-store" });
+    if (!resp.ok) throw new Error("Não foi possível carregar a base do buscador.");
+    const gzBytes = new Uint8Array(await resp.arrayBuffer());
+    if (publication) {
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", gzBytes));
+      const received = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+      if (received !== publication.data_sha256) {
+        document.getElementById("updated-at").textContent = "Publicação em andamento. Recarregue em instantes.";
+        throw new Error("A base publicada ainda não corresponde à atualização. Recarregue em instantes.");
+      }
+    }
+
+    if ("DecompressionStream" in window) {
+      const ds = new DecompressionStream("gzip");
+      const stream = new Blob([gzBytes]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return pako.ungzip(gzBytes);
+  }
+
+  function renderDatabaseUpdatedAt() {
+    if (!PUBLICATION_UPDATED_AT) {
+      document.getElementById("updated-at").textContent = "Data da atualização indisponível";
+      return;
+    }
+    const date = new Date(PUBLICATION_UPDATED_AT);
+    if (Number.isNaN(date.getTime())) return;
+    const formatted = date.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).replace(",", "");
+    document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
+  }
+
+  // Load sql.js and the compressed database
+  const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
+  const dbBytes = await loadCompressedDbBytes(`data.db.gz?v=${DATABASE_VERSION}`);
+  db = new SQL.Database(dbBytes);
+  renderDatabaseUpdatedAt();
+
+  // Pre-load hierarchy for cascading dropdowns
+  hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;
+
+  // Build lookup maps: short code -> full label
+  const grupoLabels = new Map();
+  const classeLabels = new Map();
+  const materialLabels = new Map();
+  for (const [, g, c] of hierarchy) {
+    const gCode = g.split(" - ")[0].trim();
+    const cCode = c.split(" - ")[0].trim();
+    if (!grupoLabels.has(gCode)) grupoLabels.set(gCode, g);
+    if (!classeLabels.has(cCode)) classeLabels.set(cCode, c);
+  }
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  // DOM refs
+  const filterTipo       = document.getElementById("filter-tipo");
+  const filterSituacao   = document.getElementById("filter-situacao");
+  const filterAgriFam    = document.getElementById("filter-agrifam");
+  const filterSustentavel = document.getElementById("filter-sustentavel");
+  const filterRegistroPrecos = document.getElementById("filter-registro-precos");
+  const filterEspecificacaoLonga = document.getElementById("filter-especificacao-longa");
+  const naturezaFacets = document.getElementById("natureza-facets");
+  const linhasFacets   = document.getElementById("linhas-facets");
+  const materialFacets = document.getElementById("material-facets");
+  const elementosFacets = document.getElementById("elementos-facets");
+  const specIn       = document.getElementById("spec");
+  const grupoFacets  = document.getElementById("grupo-facets");
+  const classeFacets = document.getElementById("classe-facets");
+  const facetResizer = document.getElementById("facet-resizer");
+  const sidebarEl    = document.querySelector(".sidebar");
+  const sidebarResizer = document.getElementById("sidebar-resizer");
+  const tbody        = document.getElementById("tbody");
+  const resultsCards = document.getElementById("results-cards");
+  const infoEl       = document.getElementById("info");
+  const prevBtn      = document.getElementById("prev");
+  const nextBtn      = document.getElementById("next");
+  const toggleExtraColsBtn = document.getElementById("toggle-extra-cols");
+  const colsPanel = document.getElementById("cols-panel");
+  const colsPanelBody = document.getElementById("cols-panel-body");
+  const clearFiltersBtn = document.getElementById("clear-filters");
+  const searchClearBtn  = document.getElementById("search-clear");
+  const filterToggleBtn = document.getElementById("mobile-filter-toggle");
+  const filterCloseBtn = document.getElementById("filter-close");
+  const filterBackdrop = document.getElementById("filters-backdrop");
+  const mobileFilterDoneBtn = document.getElementById("mobile-filter-done");
+  const mobileFilterBadge = document.getElementById("mobile-filter-badge");
+  const activeFilterChips = document.getElementById("active-filter-chips");
+  const appEl = document.getElementById("app");
+  const tableHead = document.querySelector("thead");
+
+  // Initialize Tom Select on grupo and classe (multi-select)
+  const tsGrupo = new TomSelect("#grupo", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsNatureza = new TomSelect("#natureza", {
+    plugins: ["remove_button"],
+    placeholder: "Todas",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsLinhas = new TomSelect("#linhas-fornecimento", {
+    plugins: ["remove_button"],
+    placeholder: "Todas",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsMaterial = new TomSelect("#material", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsElementos = new TomSelect("#elementos-item", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  const tsClasse = new TomSelect("#classe", {
+    plugins: ["remove_button"],
+    placeholder: "Todos",
+    maxItems: null,
+    sortField: { field: "text", direction: "asc" },
+    onChange: () => { if (!updating) refresh(); },
+  });
+
+  function getAdminFilterValue(ul) {
+    const active = ul.querySelector("li.active");
+    return active ? active.dataset.value : "";
+  }
+
+  function getFilters() {
+    return {
+      tipo:        getAdminFilterValue(filterTipo),
+      situacao:    getAdminFilterValue(filterSituacao),
+      agriFam:     getAdminFilterValue(filterAgriFam),
+      sustentavel: getAdminFilterValue(filterSustentavel),
+      registroPrecos: getAdminFilterValue(filterRegistroPrecos),
+      especificacaoLonga: getAdminFilterValue(filterEspecificacaoLonga),
+      naturezas:   tsNatureza.getValue(),
+      linhas:      tsLinhas.getValue(),
+      materiais:   tsMaterial.getValue(),
+      elementos:   tsElementos.getValue(),
+      grupos:      tsGrupo.getValue(),
+      classes:     tsClasse.getValue(),
+      spec:        specIn.value.trim(),
+    };
+  }
+
+  function pageSize() {
+    return MOBILE_VIEW.matches ? MOBILE_PAGE_SIZE : PAGE_SIZE;
+  }
+
+  function resetAdminFilter(ul) {
+    ul.querySelector("li.active")?.classList.remove("active");
+    ul.querySelector('li[data-value=""]').classList.add("active");
+  }
+
+  function selectedAdminLabel(ul) {
+    const selected = ul.querySelector("li.active");
+    return selected ? selected.textContent.replace(/\s*\([\d.]+\)$/, "").trim() : "";
+  }
+
+  function activeFilterDescriptors() {
+    const descriptors = [];
+    const adminFilters = [
+      [filterTipo, "Tipo"],
+      [filterSituacao, "Situa\u00e7\u00e3o"],
+      [filterAgriFam, "Agricultura familiar"],
+      [filterSustentavel, "Sustent\u00e1vel"],
+      [filterRegistroPrecos, "Registro de pre\u00e7os"],
+      [filterEspecificacaoLonga, "Especifica\u00e7\u00e3o longa"],
+    ];
+    for (const [ul, label] of adminFilters) {
+      if (!getAdminFilterValue(ul)) continue;
+      descriptors.push({
+        label: `${label}: ${selectedAdminLabel(ul)}`,
+        clear: () => { resetAdminFilter(ul); refresh(); },
+      });
+    }
+
+    const selectFilters = [
+      [tsNatureza, "Natureza"],
+      [tsElementos, "Elemento-item"],
+      [tsLinhas, "Linha"],
+      [tsGrupo, "Grupo"],
+      [tsClasse, "Classe"],
+      [tsMaterial, "Material/servi\u00e7o"],
+    ];
+    for (const [select, label] of selectFilters) {
+      const values = select.getValue();
+      if (!values.length) continue;
+      const selection = values.length === 1 ? values[0] : `${values.length} selecionados`;
+      descriptors.push({
+        label: `${label}: ${selection}`,
+        clear: () => { select.clear(true); refresh(); },
+      });
+    }
+    return descriptors;
+  }
+
+  function renderActiveFilters() {
+    const descriptors = activeFilterDescriptors();
+    activeFilterChips.innerHTML = "";
+    for (const descriptor of descriptors) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.textContent = `${descriptor.label} \u00d7`;
+      chip.title = `Remover ${descriptor.label}`;
+      chip.addEventListener("click", descriptor.clear);
+      activeFilterChips.appendChild(chip);
+    }
+    mobileFilterBadge.textContent = descriptors.length;
+    mobileFilterBadge.classList.toggle("has-filters", descriptors.length > 0);
+  }
+
+  function syncFilterDrawerAccessibility() {
+    if (!FILTER_DRAWER_VIEW.matches) {
+      document.body.classList.remove("filters-open");
+      sidebarEl.removeAttribute("aria-hidden");
+      sidebarEl.removeAttribute("role");
+      sidebarEl.removeAttribute("aria-modal");
+      sidebarEl.inert = false;
+      mobileFilterDoneBtn.tabIndex = -1;
+      filterToggleBtn.setAttribute("aria-expanded", "false");
+      return;
+    }
+    const open = document.body.classList.contains("filters-open");
+    sidebarEl.setAttribute("role", "dialog");
+    sidebarEl.setAttribute("aria-modal", String(open));
+    sidebarEl.setAttribute("aria-hidden", String(!open));
+    sidebarEl.inert = !open;
+    mobileFilterDoneBtn.tabIndex = open ? 0 : -1;
+    filterToggleBtn.setAttribute("aria-expanded", String(open));
+  }
+
+  function openMobileFilters() {
+    if (!FILTER_DRAWER_VIEW.matches) return;
+    document.body.classList.add("filters-open");
+    syncFilterDrawerAccessibility();
+    filterCloseBtn.focus();
+  }
+
+  function closeMobileFilters(restoreFocus = true) {
+    document.body.classList.remove("filters-open");
+    syncFilterDrawerAccessibility();
+    if (restoreFocus && FILTER_DRAWER_VIEW.matches) filterToggleBtn.focus();
+  }
+
+  function codeOf(label) {
+    return label.split(" - ")[0].trim();
+  }
+
+  function fmt(n) {
+    return n.toLocaleString("pt-BR");
+  }
+
+  // Build SQL IN clause with numbered params: (:p0, :p1, ...)
+  function inClause(col, values, prefix, params) {
+    const placeholders = values.map((v, i) => {
+      const key = `:${prefix}${i}`;
+      params[key] = v;
+      return key;
+    });
+    return `${col} IN (${placeholders.join(",")})`;
+  }
+
+  // Build WHERE clause, optionally excluding one facet
+  function buildWhere(exclude) {
+    const f = getFilters();
+    const clauses = [];
+    const params = {};
+
+    if (exclude !== "tipo" && f.tipo)
+      { clauses.push("tipo = :t0"); params[":t0"] = f.tipo; }
+    if (exclude !== "situacao" && f.situacao)
+      { clauses.push("situacao = :si0"); params[":si0"] = f.situacao; }
+    if (exclude !== "agricultura_familiar" && f.agriFam)
+      { clauses.push("agricultura_familiar = :af0"); params[":af0"] = f.agriFam; }
+    if (exclude !== "sustentavel" && f.sustentavel)
+      { clauses.push("sustentavel = :su0"); params[":su0"] = f.sustentavel; }
+    if (exclude !== "ok_registro_precos" && f.registroPrecos) {
+      if (f.registroPrecos === "__empty__") clauses.push("ok_registro_precos = ''");
+      else { clauses.push("ok_registro_precos = :rp0"); params[":rp0"] = f.registroPrecos; }
+    }
+    if (exclude !== "especificacao_longa" && f.especificacaoLonga)
+      { clauses.push("especificacao_longa = :el0"); params[":el0"] = f.especificacaoLonga; }
+    if (exclude !== "natureza" && f.naturezas.length)
+      clauses.push(inClause("natureza", f.naturezas, "n", params));
+    if (exclude !== "linhas_fornecimento" && f.linhas.length)
+      clauses.push(inClause("linhas_fornecimento", f.linhas, "lf", params));
+    if (exclude !== "material" && f.materiais.length)
+      clauses.push(inClause("material_codigo", f.materiais, "m", params));
+    if (exclude !== "elementos_codigos" && f.elementos.length) {
+      const elClause = elementosClause(f.elementos, params);
+      if (elClause) clauses.push(elClause);
+    }
+    if (exclude !== "grupo" && f.grupos.length)
+      clauses.push(inClause("grupo", f.grupos, "g", params));
+    if (exclude !== "classe" && f.classes.length)
+      clauses.push(inClause("classe", f.classes, "c", params));
+    if (f.spec) {
+      const searchClause = buildSearchClause(f.spec, params, "fts");
+      if (searchClause) clauses.push(searchClause);
+    }
+
+    return { where: clauses.length ? " WHERE " + clauses.join(" AND ") : "", params };
+  }
+
+  // Run a GROUP BY query and return a Map of value -> count
+  function facetCounts(col, exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT ${col}, COUNT(*) FROM items${where} GROUP BY ${col}`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [val, count] of result[0].values) counts.set(val, count);
+    }
+    return counts;
+  }
+
+  function formatMaterialLabel(code, name) {
+    if (code && name) return `${code} - ${name}`;
+    return code || name || "";
+  }
+
+  function materialCounts(exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT material_codigo, material_nome, COUNT(*) FROM items${where} GROUP BY material_codigo, material_nome`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [code, name, count] of result[0].values) {
+        if (!code) continue;
+        if (!counts.has(code)) counts.set(code, { name, count });
+        else counts.get(code).count += count;
+      }
+    }
+    return counts;
+  }
+
+  function elementCodeOf(label) {
+    if (label == null) return "";
+    const text = String(label).trim();
+    return text.includes(" - ") ? text.split(" - ", 1)[0].trim() : text;
+  }
+
+  function elementosCounts(exclude) {
+    const { where, params } = buildWhere(exclude);
+    const sql = `SELECT elementos_codigos FROM items${where}`;
+    const result = db.exec(sql, params);
+    const counts = new Map();
+    if (result.length) {
+      for (const [val] of result[0].values) {
+        if (!val) continue;
+        const parts = String(val).split(";").map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          const code = elementCodeOf(p);
+          if (!code) continue;
+          const current = counts.get(code);
+          if (current) current.count += 1;
+          else counts.set(code, { label: p, count: 1 });
+        }
+      }
+    }
+    return counts;
+  }
+
+  function updateAdminFilterCounts(ul, col) {
+    const counts = facetCounts(col, col);
+    let total = 0;
+    for (const [, c] of counts) total += c;
+    ul.querySelectorAll("li").forEach(li => {
+      const val = li.dataset.value;
+      const baseText = li.textContent.replace(/\s*\([\d.]+\)$/, "");
+      if (val === "") {
+        li.textContent = `${baseText} (${fmt(total)})`;
+      } else {
+        const count = counts.get(val === "__empty__" ? "" : val) || 0;
+        li.textContent = `${baseText} (${fmt(count)})`;
+      }
+    });
+  }
+
+  // Render a clickable facet list sorted by count desc
+  function renderFacetList(container, items, selected, ts) {
+    // items: [{ code, label, count }], sorted by count desc
+    const selSet = new Set(selected);
+    container.innerHTML = "";
+    for (const { code, label, count } of items) {
+      const div = document.createElement("div");
+      div.className = "facet-item" + (selSet.has(code) ? " selected" : "");
+      div.innerHTML = `<span class="facet-label" title="${esc(label)}">${esc(label)}</span><span class="facet-badge">${fmt(count)}</span>`;
+      div.addEventListener("click", () => {
+        const cur = ts.getValue();
+        if (cur.includes(code)) {
+          ts.removeItem(code, true);
+        } else {
+          ts.addItem(code, true);
+        }
+        refresh();
+      });
+      container.appendChild(div);
+    }
+  }
+
+  function populateSimpleFacet(col, ts, container) {
+    const counts = facetCounts(col, col);
+    const prev = ts.getValue();
+    const items = [];
+    const seen = new Set();
+    for (const [val, count] of counts) {
+      if (val == null || val === "") continue;
+      seen.add(val);
+      items.push({ code: val, label: val, count });
+    }
+    // Ensure selected values remain visible even if count is zero
+    for (const val of prev) {
+      if (seen.has(val)) continue;
+      seen.add(val);
+      items.push({ code: val, label: val, count: 0 });
+    }
+    ts.clearOptions();
+    for (const { code, label, count } of items) {
+      ts.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    ts.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(container, sorted, valid, ts);
+  }
+
+  function populateMateriais() {
+    const counts = materialCounts("material");
+    const prev = tsMaterial.getValue();
+    const items = [];
+    const seen = new Set();
+    materialLabels.clear();
+    for (const [code, data] of counts) {
+      const label = formatMaterialLabel(code, data.name);
+      const selected = prev.includes(code);
+      if (data.count === 0 && !selected) continue;
+      seen.add(code);
+      materialLabels.set(code, label);
+      items.push({ code, label, count: data.count });
+    }
+    for (const code of prev) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      const label = code;
+      materialLabels.set(code, label);
+      items.push({ code, label, count: 0 });
+    }
+    tsMaterial.clearOptions();
+    for (const { code, label, count } of items) {
+      tsMaterial.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsMaterial.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(materialFacets, sorted, valid, tsMaterial);
+  }
+
+  function populateElementos() {
+    const counts = elementosCounts("elementos_codigos");
+    const prev = tsElementos.getValue();
+    const items = [];
+    const seen = new Set();
+    for (const [code, data] of counts) {
+      seen.add(code);
+      items.push({ code, label: data.label, count: data.count });
+    }
+    for (const code of prev) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      items.push({ code, label: code, count: 0 });
+    }
+    tsElementos.clearOptions();
+    for (const { code, label, count } of items) {
+      tsElementos.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsElementos.setValue(valid, true);
+
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(elementosFacets, sorted, valid, tsElementos);
+  }
+
+  // Populate grupo options from hierarchy, with facet counts + visible list
+  function populateGrupos() {
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos = tipoVal ? new Set([tipoVal]) : new Set();
+    const counts = facetCounts("grupo", "grupo");
+    const prev = tsGrupo.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      const code = codeOf(g);
+      if (seen.has(code)) continue;
+      const count = counts.get(code) || 0;
+      const selected = prev.includes(code);
+      if (count === 0 && !selected) continue;
+      seen.add(code);
+      items.push({ code, label: g, count });
+    }
+    // Update Tom Select options
+    tsGrupo.clearOptions();
+    for (const { code, label, count } of items) {
+      tsGrupo.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsGrupo.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(grupoFacets, sorted, valid, tsGrupo);
+  }
+
+  // Populate classe options from hierarchy, with facet counts + visible list
+  function populateClasses() {
+    const tipoVal = getAdminFilterValue(filterTipo);
+    const tipos  = tipoVal ? new Set([tipoVal]) : new Set();
+    const grupos = new Set(tsGrupo.getValue());
+    const counts = facetCounts("classe", "classe");
+    const prev = tsClasse.getValue();
+    const seen = new Set();
+    const items = [];
+    for (const [t, g, c] of hierarchy) {
+      if (tipos.size && !tipos.has(t)) continue;
+      if (grupos.size && !grupos.has(codeOf(g))) continue;
+      const code = codeOf(c);
+      if (seen.has(code)) continue;
+      const count = counts.get(code) || 0;
+      const selected = prev.includes(code);
+      if (count === 0 && !selected) continue;
+      seen.add(code);
+      items.push({ code, label: c, count });
+    }
+    // Update Tom Select options
+    tsClasse.clearOptions();
+    for (const { code, label, count } of items) {
+      tsClasse.addOption({ value: code, text: `${label} (${fmt(count)})` });
+    }
+    const valid = prev.filter(v => seen.has(v));
+    tsClasse.setValue(valid, true);
+
+    // Render visible list sorted by count desc
+    const sorted = [...items].sort((a, b) => b.count - a.count);
+    renderFacetList(classeFacets, sorted, valid, tsClasse);
+  }
+
+  function buildQuery(countOnly) {
+    const { where, params } = buildWhere();
+    if (countOnly) {
+      return { sql: "SELECT COUNT(*) FROM items" + where, params };
+    }
+    const f = getFilters();
+    let order;
+    if (sortKey) {
+      order = `ORDER BY ${SORT_COLUMNS[sortKey]} ${sortDirection.toUpperCase()}, item_id ASC`;
+    } else if (f.spec) {
+      order = "ORDER BY (SELECT rank FROM items_fts WHERE items_fts MATCH :fts_rank AND items_fts.rowid = items.rowid), item_id ASC";
+      params[":fts_rank"] = ftsQuery(f.spec);
+    } else {
+      order = "ORDER BY codigo COLLATE NOCASE ASC, item_id ASC";
+    }
+    return {
+      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      params: { ...params, ":limit": pageSize(), ":offset": page * pageSize() },
+    };
+  }
+
+  function statusBadgeClass(value) {
+    const normalized = String(value || "").toLocaleLowerCase("pt-BR");
+    if (normalized === "ativo") return "is-ativo";
+    if (normalized === "inativo") return "is-inativo";
+    if (normalized.includes("suspenso")) return "is-suspenso";
+    return "";
+  }
+
+  function renderMobileCards(data) {
+    resultsCards.innerHTML = "";
+    if (!MOBILE_VIEW.matches) return;
+
+    for (const [codigo, spec, situacao, natureza, elementosCodigos, linhasFornecimento, materialCodigo, materialNome, classe, grupo, itemId, tipo, servicoId, dataAtualizacao, versao, dataCriacao] of data) {
+      const detailUrl = tipo === "SERVICO"
+        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(itemId)}`
+        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(itemId)}`;
+      const materialLabel = materialLabels.get(materialCodigo) || formatMaterialLabel(materialCodigo, materialNome);
+      const card = document.createElement("article");
+      card.className = "result-card";
+      card.innerHTML = `
+        <div class="result-card-main">
+          <div class="result-card-heading">
+            <a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link result-card-code">${esc(codigo)} <span aria-hidden="true">\u2197</span></a>
+            <span class="status-badge ${statusBadgeClass(situacao)}">${esc(situacao)}</span>
+          </div>
+          <p class="result-card-spec">${esc(spec)}</p>
+          <p class="result-card-material">${esc(materialLabel)}</p>
+        </div>
+        <details>
+          <summary>Ver detalhes</summary>
+          <dl>
+            <dt>Natureza</dt><dd>${esc(natureza) || "\u2014"}</dd>
+            <dt>Elemento-item</dt><dd>${esc(elementosCodigos) || "\u2014"}</dd>
+            <dt>Linha</dt><dd>${esc(linhasFornecimento) || "\u2014"}</dd>
+            <dt>Classe</dt><dd>${esc(classeLabels.get(classe) || classe) || "\u2014"}</dd>
+            <dt>Grupo</dt><dd>${esc(grupoLabels.get(grupo) || grupo) || "\u2014"}</dd>
+            <dt>Atualiza\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataAtualizacao)) || "\u2014"}</dd>
+            <dt>Vers\u00e3o</dt><dd>${esc(versao) || "\u2014"}</dd>
+            <dt>Cria\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataCriacao)) || "\u2014"}</dd>
+            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
+          </dl>
+        </details>
+      `;
+      resultsCards.appendChild(card);
+    }
+  }
+
+  function query() {
+    const countQ = buildQuery(true);
+    const total = db.exec(countQ.sql, countQ.params)[0].values[0][0];
+
+    const dataQ = buildQuery(false);
+    const rows = db.exec(dataQ.sql, dataQ.params);
+    const data = rows.length ? rows[0].values : [];
+
+    const currentPageSize = pageSize();
+    const start = total > 0 ? page * currentPageSize + 1 : 0;
+    const end = Math.min((page + 1) * currentPageSize, total);
+    infoEl.textContent = `Mostrando ${start}\u2013${end} de ${fmt(total)} itens`;
+    mobileFilterDoneBtn.textContent = `Mostrar ${fmt(total)} ${total === 1 ? "item" : "itens"}`;
+
+    prevBtn.disabled = page === 0;
+    nextBtn.disabled = end >= total;
+
+    tbody.innerHTML = "";
+    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao] of data) {
+      const detailUrl = tipo === "SERVICO"
+        ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
+        : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
+      const materialLabel = materialLabels.get(mat_codigo) || formatMaterialLabel(mat_codigo, mat_nome);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
+        <td class="spec col-spec">${esc(spec)}</td>
+        <td class="col-situacao">${esc(situacao)}</td>
+        <td class="col-natureza">${esc(natureza)}</td>
+        <td class="col-elementos-codigos">${esc(elementos_codigos)}</td>
+        <td class="col-linhas">${esc(linhas_fornec)}</td>
+        <td class="material col-material">${esc(materialLabel)}</td>
+        <td class="classe col-classe">${esc(classeLabels.get(classe) || classe)}</td>
+        <td class="grupo col-grupo">${esc(grupoLabels.get(grupo) || grupo)}</td>
+        <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
+        <td class="col-versao">${esc(versao)}</td>
+        <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
+        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
+      `;
+      tbody.appendChild(tr);
+    }
+    renderMobileCards(data);
+
+    // Highlight search terms in all FTS-indexed columns
+    const specTerm = specIn.value.trim();
+    if (specTerm) {
+      new Mark(tbody.querySelectorAll("td.col-codigo, td.spec, td.material, td.classe, td.grupo")).mark(specTerm, { separateWordSearch: true });
+      new Mark(resultsCards.querySelectorAll(".result-card-code, .result-card-spec, .result-card-material")).mark(specTerm, { separateWordSearch: true });
+    }
+  }
+
+  function ftsQuery(input) {
+    const clean = input.replace(/[()+"*:^]/g, ' ');
+    const terms = clean.trim().split(/\s+/).filter(Boolean);
+    return terms.map(t => '"' + t + '"').join(' ');
+  }
+
+  function digitsOnly(input) {
+    return String(input || "").replace(/\D+/g, "");
+  }
+
+  function stripLeadingZeros(input) {
+    return String(input || "").replace(/^0+/, "") || "0";
+  }
+
+  function codeSearchTerms(input) {
+    return String(input || "")
+      .split(/\s+/)
+      .map(digitsOnly)
+      .filter(term => term.length >= 3);
+  }
+
+  function buildSearchClause(input, params, ftsKey) {
+    const clauses = [];
+    const fts = ftsQuery(input);
+    if (fts) {
+      params[`:${ftsKey}`] = fts;
+      clauses.push(`rowid IN (SELECT rowid FROM items_fts WHERE items_fts MATCH :${ftsKey})`);
+    }
+
+    codeSearchTerms(input).forEach((term, i) => {
+      const rawKey = `:codigo_raw_${i}`;
+      const normKey = `:codigo_norm_${i}`;
+      params[rawKey] = `%${term}%`;
+      params[normKey] = `%${stripLeadingZeros(term)}%`;
+      clauses.push(`(codigo LIKE ${rawKey} OR LTRIM(codigo, '0') LIKE ${normKey})`);
+    });
+
+    return clauses.length ? `(${clauses.join(" OR ")})` : "";
+  }
+
+  function elementosClause(values, params) {
+    const parts = [];
+    values.forEach((code, i) => {
+      const key = `:e${i}`;
+      params[`${key}b`] = code;
+      params[`${key}sp`] = `${code}; %`;
+      params[`${key}ss`] = `%; ${code}`;
+      params[`${key}d1`] = `${code} - %`;
+      params[`${key}d2`] = `%; ${code} - %`;
+      parts.push(
+        `(elementos_codigos = ${key}b OR elementos_codigos LIKE ${key}sp OR elementos_codigos LIKE ${key}ss OR elementos_codigos LIKE ${key}d1 OR elementos_codigos LIKE ${key}d2)`
+      );
+    });
+    return parts.length ? `(${parts.join(" OR ")})` : "";
+  }
+
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "";
+    const date = new Date(String(value).trim());
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).replace(",", "");
+  }
+
+  function hasActiveFilters() {
+    const f = getFilters();
+    return f.tipo || f.situacao || f.agriFam || f.sustentavel || f.registroPrecos || f.especificacaoLonga || f.naturezas.length ||
+      f.linhas.length || f.materiais.length || f.elementos.length || f.grupos.length || f.classes.length;
+  }
+
+  function resetAllFilters() {
+    for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
+      ul.querySelector("li.active")?.classList.remove("active");
+      ul.querySelector('li[data-value=""]').classList.add("active");
+    }
+    tsNatureza.clear(true);
+    tsLinhas.clear(true);
+    tsMaterial.clear(true);
+    tsElementos.clear(true);
+    tsGrupo.clear(true);
+    tsClasse.clear(true);
+    refresh();
+  }
+
+  // Full refresh: update data table + all facet counts
+  function refresh() {
+    page = 0;
+    updating = true;
+    updateAdminFilterCounts(filterTipo, "tipo");
+    updateAdminFilterCounts(filterSituacao, "situacao");
+    updateAdminFilterCounts(filterAgriFam, "agricultura_familiar");
+    updateAdminFilterCounts(filterSustentavel, "sustentavel");
+    updateAdminFilterCounts(filterRegistroPrecos, "ok_registro_precos");
+    updateAdminFilterCounts(filterEspecificacaoLonga, "especificacao_longa");
+    populateSimpleFacet("natureza", tsNatureza, naturezaFacets);
+    populateSimpleFacet("linhas_fornecimento", tsLinhas, linhasFacets);
+    populateMateriais();
+    query();
+    populateElementos();
+    populateGrupos();
+    populateClasses();
+    updating = false;
+    clearFiltersBtn.hidden = !hasActiveFilters();
+    searchClearBtn.style.display = specIn.value ? "block" : "none";
+    renderActiveFilters();
+  }
+
+  // Debounce for text inputs
+  let debounceTimer;
+  function debouncedRefresh() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(refresh, 300);
+  }
+
+  // Event listeners
+  for (const ul of [filterTipo, filterSituacao, filterAgriFam, filterSustentavel, filterRegistroPrecos, filterEspecificacaoLonga]) {
+    ul.addEventListener("click", e => {
+      const li = e.target.closest("li");
+      if (!li) return;
+      ul.querySelector("li.active")?.classList.remove("active");
+      li.classList.add("active");
+      refresh();
+    });
+  }
+  specIn.addEventListener("input", debouncedRefresh);
+  clearFiltersBtn.addEventListener("click", resetAllFilters);
+  searchClearBtn.addEventListener("click", () => { specIn.value = ""; refresh(); });
+  filterToggleBtn.addEventListener("click", openMobileFilters);
+  filterCloseBtn.addEventListener("click", () => closeMobileFilters());
+  filterBackdrop.addEventListener("click", () => closeMobileFilters());
+  mobileFilterDoneBtn.addEventListener("click", () => closeMobileFilters());
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && document.body.classList.contains("filters-open")) closeMobileFilters();
+  });
+  FILTER_DRAWER_VIEW.addEventListener("change", () => closeMobileFilters(false));
+  MOBILE_VIEW.addEventListener("change", () => { page = 0; query(); });
+  syncFilterDrawerAccessibility();
+
+  prevBtn.addEventListener("click", () => { page--; query(); });
+  nextBtn.addEventListener("click", () => { page++; query(); });
+
+  function updateSortHeaders() {
+    tableHead.querySelectorAll("th[data-sort-col]").forEach(header => {
+      const active = header.dataset.sortCol === sortKey;
+      const direction = active ? sortDirection : null;
+      header.setAttribute("aria-sort", direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none");
+      header.querySelector(".sort-indicator").textContent = direction === "asc" ? "▲" : direction === "desc" ? "▼" : "↕";
+      const button = header.querySelector(".sort-button");
+      const label = button.textContent.replace(/[▲▼↕]/g, "").trim();
+      button.setAttribute("aria-label", active
+        ? `${label}: ordem ${direction === "asc" ? "crescente" : "decrescente"}. Clique para inverter.`
+        : `Ordenar por ${label}`);
+    });
+  }
+
+  tableHead.addEventListener("click", event => {
+    const button = event.target.closest("button[data-sort]");
+    if (!button) return;
+    const nextKey = button.dataset.sort;
+    if (!Object.prototype.hasOwnProperty.call(SORT_COLUMNS, nextKey)) return;
+    if (sortKey === nextKey) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+    else {
+      sortKey = nextKey;
+      sortDirection = "asc";
+    }
+    page = 0;
+    updateSortHeaders();
+    query();
+  });
+  updateSortHeaders();
+
+  const columns = [
+    { key: "codigo", label: "Codigo", cls: "col-codigo" },
+    { key: "spec", label: "Especificacao do item", cls: "col-spec" },
+    { key: "situacao", label: "Situacao", cls: "col-situacao" },
+    { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },
+    { key: "elementos_codigos", label: "Elemento-Item", cls: "col-elementos-codigos" },
+    { key: "linhas", label: "Linhas de Fornecimento", cls: "col-linhas" },
+    { key: "material", label: "Material/Servico", cls: "col-material" },
+    { key: "classe", label: "Classe", cls: "col-classe" },
+    { key: "grupo", label: "Grupo", cls: "col-grupo" },
+    { key: "data_atualizacao", label: "Ultima atualizacao", cls: "col-data-atualizacao" },
+    { key: "versao", label: "Versao", cls: "col-versao" },
+    { key: "data_criacao", label: "Data de criacao", cls: "col-data-criacao" },
+    ...(HISTORY_ENABLED
+      ? [{ key: "historico", label: "Historico", cls: "col-historico" }]
+      : []),
+  ];
+
+  function loadHiddenCols() {
+    const raw = localStorage.getItem("catmas.hiddenCols");
+    if (!raw) return new Set();
+    try { return new Set(JSON.parse(raw)); } catch { return new Set(); }
+  }
+
+  function saveHiddenCols(set) {
+    localStorage.setItem("catmas.hiddenCols", JSON.stringify([...set]));
+  }
+
+  function applyHiddenCols(set) {
+    for (const { cls } of columns) {
+      document.querySelectorAll(`.${cls}`).forEach(el => {
+        if (set.has(cls)) el.classList.add("col-hidden");
+        else el.classList.remove("col-hidden");
+      });
+    }
+  }
+
+  function renderColsPanel() {
+    const hidden = loadHiddenCols();
+    colsPanelBody.innerHTML = "";
+    for (const col of columns) {
+      const id = `col-toggle-${col.key}`;
+      const row = document.createElement("label");
+      row.innerHTML = `<input type="checkbox" id="${id}" ${hidden.has(col.cls) ? "" : "checked"}> ${col.label}`;
+      row.querySelector("input").addEventListener("change", (e) => {
+        const h = loadHiddenCols();
+        if (e.target.checked) h.delete(col.cls);
+        else h.add(col.cls);
+        saveHiddenCols(h);
+        applyHiddenCols(h);
+      });
+      colsPanelBody.appendChild(row);
+    }
+    applyHiddenCols(hidden);
+  }
+
+  toggleExtraColsBtn.addEventListener("click", () => {
+    colsPanel.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (colsPanel.contains(e.target) || toggleExtraColsBtn.contains(e.target)) return;
+    colsPanel.classList.remove("open");
+  });
+
+  // Drag to resize facet lists height
+  let resizing = false;
+  let startY = 0;
+  let startHeight = 0;
+  const minFacetHeight = 120;
+  const maxFacetHeight = 600;
+
+  function currentFacetHeight() {
+    const h = parseFloat(getComputedStyle(grupoFacets).maxHeight) || 220;
+    return Math.max(minFacetHeight, Math.min(maxFacetHeight, h));
+  }
+
+  facetResizer.addEventListener("mousedown", (e) => {
+    resizing = true;
+    startY = e.clientY;
+    startHeight = currentFacetHeight();
+    document.body.style.userSelect = "none";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!resizing) return;
+    const delta = e.clientY - startY;
+    const next = Math.max(minFacetHeight, Math.min(maxFacetHeight, startHeight + delta));
+    document.documentElement.style.setProperty("--facet-max-height", `${next}px`);
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!resizing) return;
+    resizing = false;
+    document.body.style.userSelect = "";
+  });
+
+  // Drag to resize sidebar width
+  let resizingSidebar = false;
+  let startX = 0;
+  let startWidth = 0;
+  const minSidebarWidth = 260;
+  const maxSidebarWidth = 520;
+
+  function currentSidebarWidth() {
+    return sidebarEl.getBoundingClientRect().width;
+  }
+
+  sidebarResizer.addEventListener("mousedown", (e) => {
+    resizingSidebar = true;
+    startX = e.clientX;
+    startWidth = currentSidebarWidth();
+    document.body.style.userSelect = "none";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!resizingSidebar) return;
+    const delta = e.clientX - startX;
+    const next = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, startWidth + delta));
+    sidebarEl.style.width = `${next}px`;
+    sidebarEl.style.minWidth = `${next}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!resizingSidebar) return;
+    resizingSidebar = false;
+    document.body.style.userSelect = "";
+  });
+
+  // Initial render
+  renderColsPanel();
+  refresh();
+})();
+</script>
+</body>
+</html>
