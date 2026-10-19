@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "cycle_id": "68ab15587c0c4c2cb2df0b761cc7865d",
-  "updated_at": "2026-10-19T06:02:40.333180-03:00",
-  "source_sha256": "76d80ba29ba6e81ff26fbba046fb31f148051e72642f5f29294214fc61a99b7c",
-  "data_sha256": "040af8da29453f818531b2fc998197d53cd98c202bd42e6c0b83b47b0c806786",
+  "cycle_id": "7452f247b65b4fa4a6af2c0d2f1920cc",
+  "updated_at": "2026-10-19T12:32:58.266125-03:00",
+  "source_sha256": "d6f962df12b7f0049e06f700c5fd68f2d846e1c365e917a138f5ddae29bd0c33",
+  "data_sha256": "101982dcdee1add5b5b0d91f28b9b48ed73a46ca1f4041187a43d1fffcdd2e42",
   "items": 212271,
   "converter_commit": "f8c392eac1944c690d42c17b9aec60812a78065d",
-  "history_sha256": "e33365fcf1e67bc3d82e52efecccd56cdf38efad5a35f9890e41b52c8ecc2779",
-  "history_source_sha256": "e9e9d82ba9fcd2f26d805e39b725da266e70fb5f4b3b2626f563edf41d4c4a87",
+  "history_sha256": "28bd84211cdf858109368fde8b0607d11714717db8b89ec64cb5a7c8a70691d0",
+  "history_source_sha256": "229e5eaf72419498d44906371e57a461853dc16a14f52b8eda7848e7c2d1dc18",
   "history_counts": {
     "items": 212435,
     "items_with_events": 117379,
@@ -18,7 +18,7 @@
     "components": 57646,
     "integrity": "ok"
   },
-  "catalog_extracted_at": "2026-10-19T06:00:35.546758-03:00",
-  "history_extracted_at": "2026-10-19T06:02:40.333180-03:00",
+  "catalog_extracted_at": "2026-10-19T12:30:38.106718-03:00",
+  "history_extracted_at": "2026-10-19T12:32:58.266125-03:00",
   "history_converter_commit": "8190b5ed1334fb2203aeef4fd823d70356f26944"
 }
