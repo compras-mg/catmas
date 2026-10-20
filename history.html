@@ -851,9 +851,17 @@
     renderComparison();
   }
 
+  // CATMAS item statuses observed in historical snapshots. These codes are
+  // distinct from request statuses and relational component situations.
+  function itemSituationLabel(code) {
+    if (code == null) return null;
+    const labels = { 1: "Ativo", 4: "Suspenso para compra" };
+    return labels[Number(code)] || `Situação não identificada (código ${code})`;
+  }
+
   function snapshotValue(snapshot, field) {
     if (!snapshot) return null;
-    if (field === "item_status") return snapshot.item_status == null ? null : `Situação ${snapshot.item_status}`;
+    if (field === "item_status") return itemSituationLabel(snapshot.item_status);
     return snapshot[field] || null;
   }
 
