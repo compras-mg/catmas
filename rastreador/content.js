@@ -1,7 +1,7 @@
 /* Comparison of stored content, separate from item events. */
 (function(root){
  'use strict';
- const labels={spec:'Especificação',material_nome:'Nome do material/serviço pai',situacao:'Situação',ok_registro_precos:'Registro de preços',material_codigo:'Código do material/serviço pai',especificacao_longa:'Indicador de especificação longa'};
+ const labels={servico_id:'ID do material/serviço pai',linhas_fornecimento:'Linhas de fornecimento',elementos_codigos:'Elementos de despesa',spec:'Especificação',material_nome:'Nome do material/serviço pai',situacao:'Situação',ok_registro_precos:'Registro de preços',material_codigo:'Código do material/serviço pai',especificacao_longa:'Indicador de especificação longa'};
  const kinds={somente_diacriticos:'Somente acentuação/diacríticos',representacao_unicode:'Representação Unicode',outra_diferenca:'Diferença de conteúdo'};
  const itemStatus=v=>v==null?null:({1:'Ativo',4:'Suspenso para compra'}[Number(v)]||'Situação não identificada (código '+v+')');
  const componentStatus=v=>v==null?null:({1:'Ativo',2:'Inativo'}[Number(v)]||'Situação '+v);

@@ -966,7 +966,7 @@
   }
 
   function renderComparison() {
-    if (window.CatmasBaseDiff) window.CatmasBaseDiff.render($("#base-comparison"), item, activeScope);
+    if (window.CatmasBaseDiff) window.CatmasBaseDiff.render($("#base-comparison"), item, activeScope, publication);
     const requestId = Number($("#compare-request").value || selectedRequestId);
     if (!requestId) {
       $("#comparison").innerHTML = `<div class="empty">Não há estados de solicitação disponíveis para comparação neste escopo. Consulte também as diferenças entre bases publicadas acima, quando disponíveis.</div>`;
