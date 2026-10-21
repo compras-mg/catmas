@@ -76,6 +76,7 @@
  $('#filters').onsubmit=e=>{e.preventDefault();offset=0;load();};function applyPeriod(){
  const value=$('#period').value;$('#closed-month-label').hidden=value!=='month';
  if(value==='month'){const range=CatmasModel.closedMonthRange($('#closed-month').value,today());if(!range){alertError('Escolha um mês já encerrado.');return;}$('#from').value=range.from;$('#to').value=range.to;$('#filter-error').hidden=true;}
+ else if(value==='all'){if(!info?.dates?.first||!info?.dates?.last)return;$('#from').value=info.dates.first.slice(0,10);$('#to').value=info.dates.last.slice(0,10);$('#filter-error').hidden=true;}
  else if(value!=='custom')fillRange(today(),Number(value));
  }
  $('#period').onchange=applyPeriod;$('#closed-month').onchange=applyPeriod;
