@@ -808,9 +808,9 @@
 
   function compareRow(label, snapshotsByStage, field) {
     const values = [1, 2, 3].map(stage => snapshotValue(snapshotsByStage.get(stage), field));
-    const different = new Set(values.map(value => value ?? "")).size > 1;
+    const different = new Set(values.filter(value => value != null)).size > 1;
     return `<div class="compare-cell compare-label">${esc(label)}</div>` +
-      values.map(value => `<div class="compare-cell ${different ? "changed" : ""} ${value == null ? "missing" : ""}">${value == null ? "Não informado" : esc(value)}</div>`).join("");
+      values.map(value => `<div class="compare-cell ${different ? "changed" : ""} ${value == null ? "missing" : ""}">${value == null ? "Não recuperado neste estado" : esc(value)}</div>`).join("");
   }
 
   function componentSignature(value) {
@@ -826,7 +826,7 @@
   }
 
   function componentHtml(value, isDifferent) {
-    if (!value) return `<div class="compare-cell missing">Não presente</div>`;
+    if (!value) return `<div class="compare-cell missing">Não recuperado neste estado</div>`;
     const isNew = String(value.source_kind).startsWith("nova_") || String(value.source_kind).startsWith("novo_");
     return `<div class="compare-cell ${isDifferent ? "changed" : ""}">
       <div class="component-label">${esc(value.label)} ${isNew ? `<span class="badge brand">novo</span>` : ""}</div>
@@ -836,10 +836,71 @@
     </div>`;
   }
 
+
+  // Compare only paired, explicitly stored values. Missing is not empty.
+  function summarizeChanges(snapshotsByStage, categories) {
+    const changes = [];
+    const before = snapshotsByStage.get(1), after = snapshotsByStage.get(3);
+    if (!before || !after) return changes;
+    for (const [field, label] of [
+      ["specification", "Especificação"],
+      ["specification_complement", "Complementação"],
+      ["item_status", "Situação do item"]
+    ]) {
+      const a = snapshotValue(before, field), b = snapshotValue(after, field);
+      if (a != null && b != null && a !== b)
+        changes.push({ label, before: a, after: b, source: "Estados " + before.snapshot_id + " → " + after.snapshot_id });
+    }
+    for (const [category, keys] of categories) {
+      for (const [key, stages] of keys) {
+        const a = stages.get(1), b = stages.get(3);
+        if (!a || !b) continue;
+        for (const [field, suffix] of [["value", ""], ["situation", " — situação"], ["sort_order", " — ordem"]]) {
+          if (a[field] != null && b[field] != null && a[field] !== b[field])
+            changes.push({
+              label: category + " · " + (b.label || a.label || key) + suffix,
+              before: field === "situation" ? situationLabel(a[field]) : a[field],
+              after: field === "situation" ? situationLabel(b[field]) : b[field],
+              source: key + " · registros " + a.source_id + " → " + b.source_id
+            });
+        }
+      }
+    }
+    return changes;
+  }
+
+  function renderChangeSummary(request, snapshotsByStage, categories, history) {
+    const changes = summarizeChanges(snapshotsByStage, categories);
+    const evidence = history.filter(event => {
+      const parsed = parseRequestEventDetails(event.details, event.action_code);
+      return parsed.stage === "Aprovada" && /^Sucesso$/i.test(parsed.communicationStatus || "");
+    });
+    let html = '<div class="detail-section"><h3>Síntese da comparação — Antes → Analisado</h3>';
+    html += '<p class="meta">Diferenças entre valores armazenados na mesma solicitação. Campos ausentes não são interpretados como vazios. O conteúdo analisado não comprova, sozinho, aplicação ao catálogo.</p>';
+    html += changes.length ? '<ul class="raw-list">' + changes.map(change =>
+      '<li><strong>' + esc(change.label) + '</strong><div><del>' + esc(change.before) +
+      '</del> → <ins>' + esc(change.after) + '</ins></div><div class="meta">' +
+      esc(change.source) + '</div></li>').join("") + '</ul>' :
+      '<div class="empty">Nenhuma diferença entre valores preenchidos foi identificada. Isso não comprova ausência de alteração; consulte os estados e componentes abaixo.</div>';
+    if (evidence.length) {
+      html += '<h3>Aprovação com comunicação de sucesso</h3>' + evidence.map(event =>
+        '<p>' + esc(String(event.occurred_at || "Data não informada")) + ' · ' +
+        esc(event.user_name || "Responsável não informado") +
+        ' · Evento da solicitação ' + esc(event.request_event_id) +
+        '</p><div class="flow-observation">' + esc(event.details) + '</div>').join("");
+      html += '<p class="meta">Data/hora conforme a origem, com fuso não confirmado. É o registro de aprovação/comunicação, não o instante comprovado da gravação. Não foi atribuído a um evento do item por proximidade de horário.</p>';
+    } else {
+      html += '<div class="notice">Não foi localizado evento de aprovação com comunicação de sucesso para esta solicitação. As diferenças exibidas não estão classificadas como alterações efetivadas.</div>';
+    }
+    if (request?.justification) html += '<h3>Justificativa do solicitante</h3><p>' + esc(request.justification) + '</p>';
+    if (request?.analyst_justification) html += '<h3>Resposta do analista</h3><p>' + esc(request.analyst_justification) + '</p>';
+    return html + '</div>';
+  }
+
   function renderComparison() {
     const requestId = Number($("#compare-request").value || selectedRequestId);
     if (!requestId) {
-      $("#comparison").innerHTML = `<div class="empty">Não há solicitação disponível para comparação.</div>`;
+      $("#comparison").innerHTML = `<div class="empty">Conteúdo anterior não recuperado. Não há estados de solicitação disponíveis para comparação neste escopo; a descrição atual não permite reconstruir o passado.</div>`;
       return;
     }
     selectedRequestId = requestId;
@@ -849,6 +910,10 @@
       FROM snapshots s JOIN stages ON stages.code = s.stage
       WHERE s.request_id = :request_id ORDER BY s.stage
     `, { ":request_id": requestId });
+    if (new Set(snapshots.map(s => Number(s.stage))).size !== snapshots.length) {
+      $("#comparison").innerHTML = '<div class="notice">Há mais de um estado na mesma etapa desta solicitação. A comparação automática foi suspensa para evitar misturar entidades ou versões.</div>';
+      return;
+    }
     const snapshotsByStage = new Map(snapshots.map(snapshot => [Number(snapshot.stage), snapshot]));
     const snapshotIds = snapshots.map(snapshot => Number(snapshot.snapshot_id));
     const components = snapshotIds.length ? query(`
@@ -862,11 +927,18 @@
       if (!categories.has(value.category)) categories.set(value.category, new Map());
       const keys = categories.get(value.category);
       if (!keys.has(value.component_key)) keys.set(value.component_key, new Map());
-      keys.get(value.component_key).set(stageBySnapshot.get(Number(value.snapshot_id)), value);
+      const stage = stageBySnapshot.get(Number(value.snapshot_id));
+      if (keys.get(value.component_key).has(stage)) {
+        $("#comparison").innerHTML = '<div class="notice">Há componentes duplicados na mesma etapa. A comparação automática foi suspensa para evitar escolher um valor arbitrário.</div>';
+        return;
+      }
+      keys.get(value.component_key).set(stage, value);
     }
-    let html = "";
+    const history = query("SELECT * FROM request_events WHERE request_id = :request_id ORDER BY occurred_at, request_event_id", { ":request_id": requestId });
+    let html = renderChangeSummary(request, snapshotsByStage, categories, history);
+    html += '<p class="notice">Antes / Solicitado / Analisado são estados da solicitação, não uma coleção completa das versões do item. Edições diretas podem não estar cobertas.</p>';
     if (!snapshotsByStage.has(3)) {
-      html += `<div class="notice">Esta solicitação ainda não chegou à análise. O estado “Analisado” não está disponível.</div>`;
+      html += `<div class="notice">O estado “Analisado” não está disponível nesta base. Não é possível concluir a etapa da solicitação apenas por essa ausência.</div>`;
     } else if (request && Number(request.status) === 5) {
       html += `<div class="notice">A solicitação foi reprovada. O conteúdo analisado não foi aplicado ao catálogo.</div>`;
     } else if (request && Number(request.status) === 6) {
@@ -892,7 +964,7 @@
         for (const stages of keys.values()) {
           const stageValues = [stages.get(1), stages.get(2), stages.get(3)];
           const label = stageValues.find(Boolean)?.label || "Componente";
-          const different = new Set(stageValues.map(componentSignature)).size > 1;
+          const different = new Set(stageValues.filter(Boolean).map(componentSignature)).size > 1;
           html += `<div class="compare-cell compare-label">${esc(label)}</div>` +
             stageValues.map(value => componentHtml(value, different)).join("");
         }
