@@ -6,6 +6,6 @@ Dados: site/base-diffs-v1/{item_id % 8}.json; cada arquivo contém schema=1, sou
 
 Verificação: renderização dos 7.207 itens e 7.353 diferenças; teste do item 15/código 248, escape HTML, identidade divergente e sintaxe JavaScript. Comparações por solicitação continuam separadas.
 
-Publicação pendente: revisão automática interrompeu o envio dos dados para gh-pages. Apenas partes 0–5 foram enviadas. Partes 6–7 e ativação em history.html aguardam autorização explícita para publicação pública. A página de produção ainda não carrega o novo módulo.
+Publicação autorizada explicitamente pelo usuário para a ferramenta de histórico. Dados completos e interface publicados em gh-pages; ativação no commit 6f8d8f4a776b21aa34a2d865bc547b080b4e8da3. O buscador não foi alterado.
 
 Esta recuperação cobre as cópias de setembro/outubro de 2026. A atualização automática incremental ainda não está integrada à rotina de extração.
