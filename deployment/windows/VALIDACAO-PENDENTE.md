@@ -1,4 +1,10 @@
-# Integração incremental — instalação e execução real pendentes
+# Integração incremental — primeira execução real confirmada
+
+Atualização de 21/10/2026: instalação e execução integrada confirmadas pelo log Windows e pelo marcador `confirmado.json`. Ciclo `1a2cdd3a063d40458555f1ad6e87c027`, publicação `cff37dc16ba406f105f40c688b5f021ff8aceac8`, comparação até `4f3682b33971f2a6630e1eaca337fc434b551316`, confirmação às 01:26:44 de Brasília. Foram preservados 16.861 valores de campos diferentes em 16.014 itens. Sem entradas, saídas, divergências de identidade ou mudança de esquema.
+
+Validação ao vivo: intervalo 20/10 → 21/10 do item 000000035 (ID 105183) exibido no Histórico e no Rastreador; correção anterior CAPSULA → CÁPSULA do item 248 preservada. No item 35, os elementos de despesa apenas mudaram de ordem; as contagens brutas não equivalem a edições cadastrais. Separar automaticamente reordenações nas contagens permanece um aperfeiçoamento pendente. Os hashes anteriores da consulta/conversor não estavam registrados.
+
+A rotina foi disparada manualmente com os mesmos argumentos da tarefa existente. O próximo disparo automático do Agendador ainda não foi observado. Avisos e README do Rastreador atualizados em commit separado, com o manifesto de hashes atualizado atomicamente. Abaixo permanece o registro original de preparação e os procedimentos operacionais; suas referências a instalação pendente foram superadas por esta atualização.
 
 Esta entrega prepara a integração na tarefa existente `CATMAS-Extracao-Python-1230`, cuja ação é `uv run --offline --script C:\Users\m752409\Documents\CATMAS-Extracao-Python-v3\rotina_integrada.py all --scheduled`. Não cria uma segunda tarefa nem modifica extrações/conversor. Ainda não há ciclo real confirmado com esta versão.
 
