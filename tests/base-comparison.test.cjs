@@ -1,0 +1,13 @@
+const fs = require("node:fs");
+const vm = require("node:vm");
+const assert = require("node:assert/strict");
+const window = {};
+vm.runInNewContext(fs.readFileSync("site/base-comparison-v1.js", "utf8"), { window });
+const data = {schema:1,sources:[{before:"a".repeat(40),after:"b".repeat(40),published_before:"2026-10-07T01:19:51Z",published_after:"2026-10-20T15:36:53Z"}],items:{15:[["id","000000248","spec","TIPO CAPSULA","TIPO CÁPSULA","somente_diacriticos",0]]}};
+const html = window.CatmasBaseDiff.html(data,15,"000000248");
+assert.ok(html.includes("<mark>Á</mark>"));
+assert.ok(html.includes("não da edição"));
+assert.throws(()=>window.CatmasBaseDiff.html(data,15,"999"));
+assert.ok(window.CatmasBaseDiff.marked("<script>","<script>x")[0].includes("&lt;"));
+assert.ok(window.CatmasBaseDiff.html(data,99,"99").includes("Nenhuma diferença"));
+console.log("5 verificações aprovadas.");
