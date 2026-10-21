@@ -11,6 +11,16 @@ assert.equal(model.relation(event,{...event,item_id:2}).score,100);
 assert.equal(model.relation(event,{...event,item_id:2,material_service_id:80,material_service_code:'11110022',material_service_name:'TRATOR AGRICOLA',current_specification:'MOTOR DIESEL'}),null);
 assert.equal(model.similarity('Lâmina de vidro','LAMINA VIDRO'),1);
 assert.equal(model.dateRange('2026-03-02',7).from,'2026-02-24');
+assert.equal(model.dateRange('2026-10-21',30).from,'2026-09-22');
+assert.equal(model.dateRange('2026-10-21',60).from,'2026-08-23');
+assert.equal(model.dateRange('2026-10-21',90).from,'2026-07-24');
+assert.equal(model.previousClosedMonth('2026-01-15'),'2025-12');
+assert.equal(model.closedMonthRange('2024-02','2026-10-21').to,'2024-02-29');
+assert.equal(model.closedMonthRange('2026-09','2026-10-21').from,'2026-09-01');
+assert.equal(model.closedMonthRange('2026-09','2026-10-21').to,'2026-09-30');
+assert.equal(model.closedMonthRange('2026-10','2026-10-21'),null);
+assert.equal(model.closedMonthRange('2026-11','2026-10-21'),null);
+assert.equal(model.closedMonthRange('2026-13','2026-10-21'),null);
 vm.runInContext(fs.readFileSync(base+'/worker.js','utf8'),context);
 context.querySql=(sql,bind)=>JSON.parse(execFileSync('python3',['-c',`import sqlite3,json,sys
 c=sqlite3.connect(sys.argv[1]);c.row_factory=sqlite3.Row

@@ -31,5 +31,11 @@
     return {score,similarity:sim,gap,reasons};
   }
   function dateRange(end,days){const d=new Date(end+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-days+1);return {from:d.toISOString().slice(0,10),to:end};}
-  root.CatmasModel={TECHNICAL,normalize,tokens,similarity,relation,dateRange};
+  function previousClosedMonth(reference){const [y,m]=reference.slice(0,7).split('-').map(Number);return new Date(Date.UTC(y,m-2,1)).toISOString().slice(0,7);}
+  function closedMonthRange(month,reference){
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||month>=reference.slice(0,7))return null;
+    const [year,m]=month.split('-').map(Number);
+    return {from:month+'-01',to:new Date(Date.UTC(year,m,0)).toISOString().slice(0,10)};
+  }
+  root.CatmasModel={TECHNICAL,normalize,tokens,similarity,relation,dateRange,closedMonthRange,previousClosedMonth};
 })(typeof self!=='undefined'?self:globalThis);
