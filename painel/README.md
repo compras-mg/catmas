@@ -143,7 +143,7 @@ As diferenças recuperadas entre cópias ainda **não têm geração incremental
 
 O Rastreador usa a base histórica e os arquivos de comparação publicados junto à ferramenta. Ao abrir a página, consulta a versão da publicação e carrega a base correspondente. Não é uma conexão em tempo real com o sistema CATMAS ou com o Data Lake. Uma página já aberta não passa a usar automaticamente uma nova publicação; recarregue-a para consultar a atualização.
 
-A data de publicação e o intervalo mínimo/máximo dos eventos aparecem no topo. Essas datas **não garantem cobertura contínua ou completa**. Um período vazio pode decorrer de ausência de movimentação, atraso de atualização ou lacuna de exportação.
+A data de publicação e o intervalo mínimo/máximo dos eventos aparecem no topo. Essas datas **não garantem cobertura contínua ou completa**. O aviso “O período inclui dias posteriores ao último registro disponível” significa que a consulta termina depois da data do evento mais recente na base carregada. Por exemplo, uma consulta até 21/10 com último evento em 19/10 inclui dois dias sem registros disponíveis. Isso não comprova que não ocorreram movimentações nesses dias. Um período vazio pode decorrer de ausência de movimentação, atraso de atualização ou lacuna de exportação.
 
 O banco é consultado no navegador. A primeira abertura pode levar alguns instantes devido ao tamanho da base. Os filtros não alteram o cadastro ou a base de origem.
 
