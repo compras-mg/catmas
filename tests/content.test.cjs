@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
-const base=path.resolve(__dirname,'../site/painel');
+const base=path.resolve(__dirname,'../site/rastreador');
 const ctx={self:{postMessage(){}},importScripts(){},Intl,Date,fetch:async url=>{const name=String(url).replace(/^\.\.\//,'');return {ok:true,json:async()=>JSON.parse(fs.readFileSync(path.resolve(base,'..',name),'utf8'))};}};
 vm.createContext(ctx);
 for(const file of ['model.js','content.js'])vm.runInContext(fs.readFileSync(base+'/'+file,'utf8'),ctx);

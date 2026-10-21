@@ -17,7 +17,7 @@ Eventos na publicação consultada: 12/06/2018 a 19/10/2026, sem garantia de com
 
 ## Datas do Rastreador
 
-Atalhos 1, 7, 15, 30, 60 e 90 dias corridos inclusive hoje, em Brasília. Mês fechado selecionável por mês/ano, rejeitando mês atual e futuro; sugerido o último mês encerrado. Intervalos personalizados continuam inclusivos. Gráfico agrupa por mês quando o intervalo supera 45 dias. URL `painel/` preservada; título visível alterado para Rastreador.
+Atalhos 1, 7, 15, 30, 60 e 90 dias corridos inclusive hoje, em Brasília. Mês fechado selecionável por mês/ano, rejeitando mês atual e futuro; sugerido o último mês encerrado. Intervalos personalizados continuam inclusivos. Gráfico agrupa por mês quando o intervalo supera 45 dias. URL principal `rastreador/`; o endereço antigo `painel/` redireciona preservando parâmetros e fragmento. Título visível Rastreador.
 
 ## Validação
 

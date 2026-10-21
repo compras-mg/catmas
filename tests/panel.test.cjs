@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process'),path=require('node:path');
-const base=path.resolve(__dirname,'../site/painel');
+const base=path.resolve(__dirname,'../site/rastreador');
 const context={self:{postMessage(){}},globalThis:{},importScripts(){}};vm.createContext(context);
 vm.runInContext(fs.readFileSync(base+'/model.js','utf8'),context);context.CatmasModel=context.self.CatmasModel;
 const model=context.CatmasModel;
