@@ -2,7 +2,7 @@
 
 [Abrir o Rastreador](https://compras-mg.github.io/catmas/rastreador/) · [Consultar o histórico de um item](https://compras-mg.github.io/catmas/history.html?avaliacao=escopos-v1)
 
-Este guia explica como ler as medidas e os resultados da Rastreador. Documentação atualizada em 21/10/2026.
+Este guia explica como ler as medidas e os resultados do Rastreador. Documentação atualizada em 21/10/2026.
 
 ## 1. O que o Rastreador mostra
 
@@ -34,12 +34,14 @@ Para medir **materiais efetivamente alterados**, será necessário identificar o
 
 ## 3. Como consultar
 
-1. Escolha **Último dia**, **Últimos 7 dias**, **Últimos 15 dias**, **Últimos 30 dias**, **Últimos 60 dias**, **Últimos 90 dias**, **Mês fechado** ou um intervalo personalizado.
+1. Escolha **Último dia**, **Últimos 7 dias**, **Últimos 15 dias**, **Últimos 30 dias**, **Últimos 60 dias**, **Últimos 90 dias**, **Todos**, **Mês fechado** ou um intervalo personalizado.
 2. Se desejar, filtre por material/serviço, tipo de movimentação e responsável registrado na origem.
 3. Digite um código ou um trecho de texto e clique em **Consultar**.
 4. Selecione uma movimentação para abrir os detalhes à direita e acessar o histórico do item.
 
 ### Períodos e datas
+
+- **Todos** preenche as datas com o primeiro e o último evento encontrados na base carregada. Na versão consultada em 21/10/2026, isso corresponde a **12/06/2018 a 19/10/2026**. Os limites são calculados novamente a cada carregamento, não são datas fixas. Demais filtros continuam ativos. “Todos” significa todo o intervalo disponível de eventos, não garantia de histórico completo. A consulta separada de diferenças entre publicações usa essas mesmas datas de filtro: se a publicação posterior for mais recente que o último evento, amplie a data final para incluí-la.
 
 - Os atalhos usam dias corridos e **incluem o dia atual**, no horário de Brasília. “Último dia” corresponde ao dia de hoje; não é uma janela móvel de 24 horas.
 - **Mês fechado** permite escolher um mês já encerrado, do primeiro ao último dia, incluindo ambos. Por exemplo, em 21/10/2026, setembro de 2026 é um mês fechado; outubro ainda não. O mês anterior é sugerido inicialmente. Um mês fechado do calendário não implica que a base tenha dados completos desse mês.
