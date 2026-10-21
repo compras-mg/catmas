@@ -82,7 +82,8 @@ O Rastreador oferece uma consulta separada às diferenças entre cópias publica
 - Cada resultado reúne um item e um par de publicações. As contagens de pares e de campos diferentes são independentes dos eventos e não alteram as três medidas principais.
 - Mostra valores anteriores e posteriores, o tipo de diferença (inclusive acentuação) e links para as duas publicações de origem.
 - Não é a data comprovada da edição. Uma diferença pode ter ocorrido entre as extrações ou decorrer de mudança no processo de extração.
-- Esta recuperação cobre cópias de setembro/outubro de 2026. A geração incremental desses arquivos de comparação **ainda não está integrada à rotina automática de extração**. Recarregar não cria novos pares de comparação.
+- As cópias recuperadas de setembro/outubro de 2026 foram preservadas. A geração incremental está integrada à rotina existente desde o ciclo `1a2cdd3a063d40458555f1ad6e87c027`, confirmado em 21/10/2026 às 01:26:44 (Brasília). Recarregar a página consulta os resultados publicados; não executa extrações.
+- As contagens incluem diferenças textuais nas listas. No primeiro intervalo automático, o item `000000035` (ID `105183`) apresenta os mesmos cinco elementos de despesa em outra ordem. Isso não comprova mudança dos vínculos. Ainda não há separação automática dessa categoria nas contagens.
 
 As diferenças nas solicitações são obtidas do mesmo banco histórico. Só comparam valores presentes nos estados Antes e Analisado. Nulos não são tomados como vazios; inclusões e exclusões não são presumidas a partir da ausência de registros. Duplicidade por etapa ou por componente/etapa suspende a comparação. Aprovação com comunicação de sucesso é evidência administrativa separada, com horário bruto e fuso não confirmado; não é tratada como instante comprovado de gravação. Solicitações reprovadas ou parcialmente aprovadas são sinalizadas.
 
@@ -138,9 +139,24 @@ Há três coberturas diferentes:
 | --- | --- | --- |
 | Eventos históricos | Que determinada movimentação foi registrada, com seu tipo e dados de origem | Eventos encontrados desde 12/06/2018 na base consultada. O filtro usa a data do evento. Nem todo evento preserva o conteúdo anterior/posterior. |
 | Estados de solicitações | Diferenças entre valores armazenados em Antes e Analisado da mesma solicitação | Apenas solicitações/estados existentes na exportação. Não representam todas as edições diretas do catálogo e não são atribuídos aos eventos do item por aproximação de horário. |
-| Comparação de cópias publicadas | Diferenças de conteúdo, incluindo acentuação, entre duas cópias do catálogo | Recuperação recente com publicações de 22/09/2026, 06/10/2026 e 20/10/2026 no horário de Brasília. Os pares são 22/09 → 06/10 e 06/10 → 20/10. A consulta usa a data da publicação posterior, não a data exata da edição. |
+| Comparação de cópias publicadas | Diferenças de conteúdo, incluindo acentuação, entre duas cópias do catálogo | Recuperação recente com publicações de 22/09/2026, 06/10/2026 e 20/10/2026 no horário de Brasília. Os pares históricos são 22/09 → 06/10 e 06/10 → 20/10, acrescidos dos intervalos processados pela rotina incremental a partir de 20/10 → 21/10. A consulta usa a data da publicação posterior, não a data exata da edição. |
 
-As diferenças recuperadas entre cópias ainda **não têm geração incremental automática** na rotina de extração duas vezes ao dia. Eventos e estados de solicitação usam a base histórica publicada pela rotina existente. Uma nova extração de eventos não cria, sozinha, uma nova comparação entre cópias.
+A tarefa existente `CATMAS-Extracao-Python-1230` chama `rotina_integrada.py all --scheduled`, agora com comparação e preservação dos resultados antes da publicação. A primeira execução integrada foi disparada manualmente em 21/10/2026 e confirmada no Pages; a execução pelo próximo disparo do Agendador ainda não foi observada nesta validação. A extração isolada do histórico continua sem publicar comparações.
+
+O primeiro intervalo automático registrou 16.861 campos diferentes em 16.014 itens, sem entradas, saídas, divergências de identidade ou alteração do esquema SQLite. Esses números incluem diferenças de representação, como a ordem das listas; não são quantidade comprovada de edições. O commit do conversor é o mesmo nas duas bases, mas os hashes dos arquivos de conversão e consulta só passaram a ser registrados neste ciclo, impedindo confirmar retrospectivamente a igualdade desses arquivos.
+
+### Operação e retomada
+
+Pasta da rotina: `C:\Users\m752409\Documents\CATMAS-Extracao-Python-v3`.
+
+- Bases preservadas: `publicacao-integrada/diferencas/bases-anteriores/`.
+- Diagnósticos: `publicacao-integrada/diferencas/intervalos/` e, na publicação, `base-diffs-v1/intervalos/`.
+- Confirmação: `publicacao-integrada/diferencas/confirmado.json`, com `status: sucesso`, ciclo e último commit processado. Confirmações por ciclo em `publicacao-integrada/diferencas/execucoes/`.
+- Logs: `logs/integrado-*.log`. O marcador só avança após a conferência dos arquivos servidos.
+- Em falha, preservar o lote e executar na pasta da rotina: `uv run --offline --script rotina_integrada.py retry`. Isso retoma a publicação sem nova extração.
+- Cópias compactadas não têm expurgo automático nesta versão. Monitorar o espaço em disco.
+
+Validação real nas interfaces: o item `000000035` mostrou o intervalo 20/10 → 21/10 no Histórico e no Rastreador. A comparação anterior `CAPSULA → CÁPSULA` do item `000000248` permaneceu no Histórico, sem atribuição ao evento de uma analista.
 
 
 O Rastreador usa a base histórica e os arquivos de comparação publicados junto à ferramenta. Ao abrir a página, consulta a versão da publicação e carrega a base correspondente. Não é uma conexão em tempo real com o sistema CATMAS ou com o Data Lake. Uma página já aberta não passa a usar automaticamente uma nova publicação; recarregue-a para consultar a atualização.
@@ -160,3 +176,4 @@ Precisamos localizar tabelas e campos que preservem valores anteriores e posteri
 - Melhorar as associações pela semelhança das próprias mudanças.
 
 As cópias recuperadas e os estados de solicitação já permitem exibir conteúdo anterior/posterior em seus próprios contextos. Ainda falta validar vínculo com eventos, abrangência de edições diretas, autoria e instante de gravação. A ferramenta não reconstrói o texto anterior a partir da descrição atual nem atribui motivos por suposição.
+

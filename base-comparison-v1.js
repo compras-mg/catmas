@@ -18,7 +18,7 @@
     if(data.schema!==1 || !Array.isArray(data.sources) || !data.items) throw Error("Formato inválido.");
     const rows=data.items[id] || [];
     if(rows.some(r=>String(r[1]).replace(/^0+/,"")!==String(code).replace(/^0+/,""))) throw Error("Identidade divergente.");
-    let out="<h2>Diferenças entre bases publicadas</h2><p class='notice'>Comparação de cópias de setembro e outubro de 2026. As datas abaixo são de publicação (horário de Brasília), não da edição. Autoria, motivo e vínculo com eventos não foram confirmados. Mudanças na extração também podem produzir diferenças.</p>";
+    let out="<h2>Diferenças entre bases publicadas</h2><p class='notice'>Comparações preservadas entre publicações, com registro automático integrado desde 21/10/2026. As datas abaixo são de publicação (horário de Brasília), não da edição. Autoria, motivo e vínculo com eventos não foram confirmados. Mudanças na extração também podem produzir diferenças, inclusive apenas na ordem de elementos de despesa ou linhas de fornecimento. As contagens não equivalem a edições cadastrais comprovadas.</p>";
     if(!rows.length) return out+"<p class='empty'>Nenhuma diferença encontrada para este item nas cópias comparadas. Isso não comprova ausência de edições entre as extrações.</p>";
     const groups=new Map();
     for(const row of rows) {if(!groups.has(row[6]))groups.set(row[6],[]);groups.get(row[6]).push(row);}
@@ -62,3 +62,4 @@
     }
   }};
 })();
+
