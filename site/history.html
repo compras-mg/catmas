@@ -176,6 +176,13 @@
     .compare-grid { grid-template-columns: 130px repeat(3, minmax(190px, 1fr)); overflow-x: auto; }
     .request-summary { grid-template-columns: 1fr; }
   }
+
+  .base-diff-scroll { overflow-x:auto; margin:1rem 0; }
+  .base-diff-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:650px; }
+  .base-diff-table th,.base-diff-table td { border:1px solid var(--line); padding:.8rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .base-diff-table th:first-child { width:22%; }
+  .base-diff-table thead { background:var(--blue); color:white; }
+  .base-diff-table mark { background:#ffebad; color:#172c3a; }
 </style>
 </head>
 <body>
@@ -235,6 +242,7 @@
   </section>
 
   <section class="panel" id="compare-panel">
+    <section class="card compare-card" id="base-comparison"></section>
     <section class="card compare-card">
       <div class="toolbar">
         <div>
@@ -249,6 +257,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
+<script src="base-comparison-v1.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <script>
 (async () => {
@@ -898,9 +907,10 @@
   }
 
   function renderComparison() {
+    if (window.CatmasBaseDiff) window.CatmasBaseDiff.render($("#base-comparison"), item, activeScope);
     const requestId = Number($("#compare-request").value || selectedRequestId);
     if (!requestId) {
-      $("#comparison").innerHTML = `<div class="empty">Conteúdo anterior não recuperado. Não há estados de solicitação disponíveis para comparação neste escopo; a descrição atual não permite reconstruir o passado.</div>`;
+      $("#comparison").innerHTML = `<div class="empty">Não há estados de solicitação disponíveis para comparação neste escopo. Consulte também as diferenças entre bases publicadas acima, quando disponíveis.</div>`;
       return;
     }
     selectedRequestId = requestId;
