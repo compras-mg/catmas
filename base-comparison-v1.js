@@ -1,9 +1,10 @@
+// CATMAS_COMPLEMENTO_DIFF_V1
 /* Observed differences between published copies, not audited edit events. */
 (() => {
   const cache = new Map();
   let generation = 0;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const labels = {servico_id:"ID do material/serviço pai",linhas_fornecimento:"Linhas de fornecimento",elementos_codigos:"Elementos de despesa",spec:"Especificação",material_nome:"Nome do material/serviço pai",situacao:"Situação",ok_registro_precos:"Registro de preços",material_codigo:"Código do material/serviço pai",especificacao_longa:"Indicador de especificação longa"};
+  const labels = {complementacao_especificacao:"Complementação da especificação",servico_id:"ID do material/serviço pai",linhas_fornecimento:"Linhas de fornecimento",elementos_codigos:"Elementos de despesa",spec:"Especificação",material_nome:"Nome do material/serviço pai",situacao:"Situação",ok_registro_precos:"Registro de preços",material_codigo:"Código do material/serviço pai",especificacao_longa:"Indicador de especificação longa"};
   function display(value) { return value === null ? "Valor nulo na cópia" : value === "" ? "Texto vazio na cópia" : String(value); }
   function marked(a, b) {
     a = display(a); b = display(b);
@@ -19,6 +20,7 @@
     const rows=data.items[id] || [];
     if(rows.some(r=>String(r[1]).replace(/^0+/,"")!==String(code).replace(/^0+/,""))) throw Error("Identidade divergente.");
     let out="<h2>Diferenças entre bases publicadas</h2><p class='notice'>Comparações preservadas entre publicações, com registro automático integrado desde 21/10/2026. As datas abaixo são de publicação (horário de Brasília), não da edição. Autoria, motivo e vínculo com eventos não foram confirmados. Mudanças na extração também podem produzir diferenças, inclusive apenas na ordem de elementos de despesa ou linhas de fornecimento. As contagens não equivalem a edições cadastrais comprovadas.</p>";
+    out+="<p class='notice'>O texto da complementação da especificação é comparado somente quando existe nas duas bases. A primeira carga do campo serve como referência e não é contada como edição. A cobertura começa com as bases que preservam esse texto; arquivos anexos não são comparados.</p>";
     if(!rows.length) return out+"<p class='empty'>Nenhuma diferença encontrada para este item nas cópias comparadas. Isso não comprova ausência de edições entre as extrações.</p>";
     const groups=new Map();
     for(const row of rows) {if(!groups.has(row[6]))groups.set(row[6],[]);groups.get(row[6]).push(row);}
