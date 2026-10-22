@@ -175,6 +175,17 @@
   th[aria-sort="descending"] .sort-indicator { color: #be1e2d; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
   tr:hover td { background: #f8f9fa; }
+  th.col-complemento, td.col-complemento { width: 280px; max-width: 280px; }
+  .complement-preview { width: 260px; max-width: 100%; }
+  .complement-snippet { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.4; max-height: 2.8em; margin: 0 0 .35rem; }
+  .complement-open { color: #245f51; background: none; border: 0; text-decoration: underline; cursor: pointer; padding: .2rem 0; font: inherit; }
+  .complement-dialog { position: fixed; inset: 0 0 0 auto; margin: 0; box-sizing: border-box; width: min(560px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; padding: 1.5rem; overflow-y: auto; box-shadow: -8px 0 30px #0003; }
+  .complement-dialog::backdrop { background: #0006; }
+  .complement-dialog header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .complement-dialog h2 { font-size: 1.2rem; margin: 0; }
+  .complement-dialog-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+  .complement-dialog button { cursor: pointer; padding: .5rem .8rem; }
+  .complement-status { padding: .4rem 0; font-size: .85rem; color: #596166; }
   td.spec, td.material { max-width: 400px; word-break: break-word; }
   mark { background: #fff59d; padding: 0; }
   .codigo-link { color: #be1e2d; text-decoration: none; white-space: nowrap; }
@@ -279,7 +290,7 @@
 <div id="app">
   <header>
     <h1>Cat&aacute;logo de Materiais e Servi&ccedil;os (CATMAS)</h1>
-    <div class="updated-at" id="updated-at">Atualizado em 06/10/2026 22:18</div>
+    <div class="updated-at" id="updated-at">Conferindo atualização…</div>
   </header>
   <div class="layout">
     <button id="filters-backdrop" class="filters-backdrop" type="button" aria-label="Fechar filtros" tabindex="-1"></button>
@@ -400,9 +411,10 @@
           <span class="mobile-results-label">Resultados</span>
         </div>
         <div class="search-bar">
-          <input type="text" id="spec" placeholder="Buscar por c&oacute;digo ou descri&ccedil;&atilde;o...">
+          <input type="text" id="spec" placeholder="Buscar por c&oacute;digo, especifica&ccedil;&atilde;o ou complemento...">
           <button id="search-clear" class="search-clear" title="Limpar busca" aria-label="Limpar busca">&times;</button>
         </div>
+        <p id="complement-status" class="complement-status" role="status" hidden></p>
         <div id="active-filter-chips" class="active-filter-chips" aria-label="Filtros ativos"></div>
       </div>
   <div class="pagination">
@@ -428,6 +440,7 @@
       <tr>
         <th class="col-codigo" data-sort-col="codigo" aria-sort="none"><button class="sort-button" type="button" data-sort="codigo">C&oacute;digo <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
         <th class="col-spec" data-sort-col="spec" aria-sort="none"><button class="sort-button" type="button" data-sort="spec">Especifica&ccedil;&atilde;o do item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
+        <th class="col-complemento">Complementa&ccedil;&atilde;o da especifica&ccedil;&atilde;o</th>
         <th class="col-situacao" data-sort-col="situacao" aria-sort="none"><button class="sort-button" type="button" data-sort="situacao">Situa&ccedil;&atilde;o <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
         <th class="col-natureza" data-sort-col="natureza" aria-sort="none"><button class="sort-button" type="button" data-sort="natureza">Natureza de Despesa <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
         <th class="col-elementos-codigos" data-sort-col="elementos_codigos" aria-sort="none"><button class="sort-button" type="button" data-sort="elementos_codigos">Elemento-Item <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
@@ -448,6 +461,11 @@
   </div>
 </div>
 
+<dialog id="complement-dialog" class="complement-dialog" aria-labelledby="complement-title">
+  <header><h2 id="complement-title">Complementação da especificação</h2><button id="complement-close" type="button" autofocus>Fechar</button></header>
+  <p id="complement-item"></p>
+  <div id="complement-full" class="complement-dialog-text"></div>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/sql-wasm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
@@ -458,9 +476,21 @@
   const MOBILE_PAGE_SIZE = 20;
   const MOBILE_VIEW = window.matchMedia("(max-width: 700px)");
   const FILTER_DRAWER_VIEW = window.matchMedia("(max-width: 900px)");
-  const PUBLICATION_UPDATED_AT = "2026-10-06T22:18:53-03:00";
-  const DATABASE_VERSION = "20261006-1";
-  const HISTORY_PAGE_VERSION = "20260730-2";
+  let publication = null;
+  try {
+    const response = await fetch("atualizacao.json", { cache: "no-store" });
+    if (response.ok) {
+      const value = await response.json();
+      if (/^[a-f0-9]{64}$/.test(value.data_sha256) && !Number.isNaN(Date.parse(value.updated_at))) publication = value;
+    }
+  } catch {}
+  // CATMAS_CICLO_INTEGRADO_V1
+  if (!publication?.cycle_id || !/^[a-f0-9]{64}$/.test(publication.history_sha256)) {
+    throw new Error("Não foi possível confirmar o ciclo conjunto. Recarregue a página.");
+  }
+  const PUBLICATION_UPDATED_AT = publication?.updated_at;
+  const DATABASE_VERSION = publication?.data_sha256 || String(Date.now());
+  const HISTORY_PAGE_VERSION = publication.cycle_id;
   const PAGE_PARAMS = new URLSearchParams(location.search);
   const HISTORY_ENABLED = PAGE_PARAMS.get("historico") === "1";
   const HISTORY_EVALUATION = PAGE_PARAMS.get("avaliacao") === "escopos-v1";
@@ -487,7 +517,16 @@
 
   async function loadCompressedDbBytes(url) {
     const resp = await fetch(url, { cache: "no-store" });
+    if (!resp.ok) throw new Error("Não foi possível carregar a base do buscador.");
     const gzBytes = new Uint8Array(await resp.arrayBuffer());
+    if (publication) {
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", gzBytes));
+      const received = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+      if (received !== publication.data_sha256) {
+        document.getElementById("updated-at").textContent = "Publicação em andamento. Recarregue em instantes.";
+        throw new Error("A base publicada ainda não corresponde à atualização. Recarregue em instantes.");
+      }
+    }
 
     if ("DecompressionStream" in window) {
       const ds = new DecompressionStream("gzip");
@@ -498,6 +537,10 @@
   }
 
   function renderDatabaseUpdatedAt() {
+    if (!PUBLICATION_UPDATED_AT) {
+      document.getElementById("updated-at").textContent = "Data da atualização indisponível";
+      return;
+    }
     const date = new Date(PUBLICATION_UPDATED_AT);
     if (Number.isNaN(date.getTime())) return;
     const formatted = date.toLocaleString("pt-BR", {
@@ -511,12 +554,78 @@
     document.getElementById("updated-at").textContent = `Atualizado em ${formatted}`;
   }
 
-  renderDatabaseUpdatedAt();
-
   // Load sql.js and the compressed database
   const SQL = await initSqlJs({ locateFile: f => `https://cdn.jsdelivr.net/npm/sql.js-fts5@1.4.0/dist/${f}` });
   const dbBytes = await loadCompressedDbBytes(`data.db.gz?v=${DATABASE_VERSION}`);
   db = new SQL.Database(dbBytes);
+  renderDatabaseUpdatedAt();
+  // Old publications remain searchable; missing complements are never shown as empty.
+  const hasComplement = db.exec("PRAGMA table_info(items)")[0].values
+    .some(row => row[1] === "complementacao_especificacao");
+  const complementSelect = hasComplement ? "complementacao_especificacao" : "NULL";
+  if (!hasComplement) {
+    const status = document.getElementById("complement-status");
+    status.hidden = false;
+    status.textContent = "Esta carga ainda não inclui os complementos. A busca está limitada aos campos já disponíveis.";
+    document.getElementById("spec").placeholder = "Buscar por código ou especificação...";
+  }
+  const complementValues = new Map();
+  function complementSnippet(value, search) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    const fold = value => value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+    const terms = [...new Set(fold(search || "").match(/[\p{L}\p{N}]+/gu) || [])];
+    if (!terms.length) return "";
+    // Map normalized offsets back to the original text, including decomposed accents.
+    let normalized = "", positions = [];
+    for (let i = 0; i < text.length;) {
+      const char = String.fromCodePoint(text.codePointAt(i));
+      const part = fold(char);
+      for (let j = 0; j < part.length; j++) positions.push(i);
+      normalized += part;
+      i += char.length;
+    }
+    positions.push(text.length);
+    const hits = [...normalized.matchAll(/[\p{L}\p{N}]+/gu)]
+      .filter(match => terms.includes(match[0]))
+      .map(match => [positions[match.index], positions[match.index + match[0].length]]);
+    if (!hits.length) return "";
+    const start = Math.max(0, hits[0][0] - 45);
+    const end = Math.min(text.length, Math.max(start + 160, hits[0][1]));
+    let result = start ? "…" : "", cursor = start;
+    for (const [from, to] of hits) {
+      if (from >= end) break;
+      if (from < start) continue;
+      result += esc(text.slice(cursor, from)) + "<mark>" + esc(text.slice(from, Math.min(to, end))) + "</mark>";
+      cursor = Math.min(to, end);
+    }
+    return result + esc(text.slice(cursor, end)) + (end < text.length ? "…" : "");
+  }
+  function complementHtml(value, itemId) {
+    if (!hasComplement) return '<span>Indisponível nesta carga</span>';
+    if (!value || !value.trim()) return '<span>Sem complemento</span>';
+    const snippet = complementSnippet(value, specIn.value.trim());
+    return `<div class="complement-preview">${snippet ? `<p class="complement-snippet">${snippet}</p>` : ""}
+      <button type="button" class="complement-open" data-complement-id="${esc(itemId)}">Ver complemento</button></div>`;
+  }
+  const complementDialog = document.getElementById("complement-dialog");
+  document.getElementById("complement-close").addEventListener("click", () => complementDialog.close());
+  document.addEventListener("click", event => {
+    const button = event.target.closest("button[data-complement-id]");
+    if (!button) return;
+    const item = complementValues.get(button.dataset.complementId);
+    if (!item) return;
+    document.getElementById("complement-item").textContent = `${item.tipo === "SERVICO" ? "Serviço" : "Material"} ${item.codigo}`;
+    const body = document.getElementById("complement-full");
+    body.textContent = item.text;
+    if (specIn.value.trim()) new Mark(body).mark(specIn.value.trim(), { separateWordSearch: true });
+    complementDialog.showModal();
+  });
+  complementDialog.addEventListener("click", event => {
+    if (event.target === complementDialog) {
+      const rect = complementDialog.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) complementDialog.close();
+    }
+  });
 
   // Pre-load hierarchy for cascading dropdowns
   hierarchy = db.exec("SELECT tipo, grupo, classe FROM hierarchy ORDER BY tipo, grupo, classe")[0].values;
@@ -1065,7 +1174,7 @@
       order = "ORDER BY codigo COLLATE NOCASE ASC, item_id ASC";
     }
     return {
-      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
+      sql: "SELECT codigo, spec, situacao, natureza, elementos_codigos, linhas_fornecimento, material_codigo, material_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao, " + complementSelect + " AS complementacao_especificacao FROM items" + where + " " + order + " LIMIT :limit OFFSET :offset",
       params: { ...params, ":limit": pageSize(), ":offset": page * pageSize() },
     };
   }
@@ -1082,7 +1191,7 @@
     resultsCards.innerHTML = "";
     if (!MOBILE_VIEW.matches) return;
 
-    for (const [codigo, spec, situacao, natureza, elementosCodigos, linhasFornecimento, materialCodigo, materialNome, classe, grupo, itemId, tipo, servicoId, dataAtualizacao, versao, dataCriacao] of data) {
+    for (const [codigo, spec, situacao, natureza, elementosCodigos, linhasFornecimento, materialCodigo, materialNome, classe, grupo, itemId, tipo, servicoId, dataAtualizacao, versao, dataCriacao, complemento] of data) {
       const detailUrl = tipo === "SERVICO"
         ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(itemId)}`
         : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(itemId)}`;
@@ -1096,6 +1205,7 @@
             <span class="status-badge ${statusBadgeClass(situacao)}">${esc(situacao)}</span>
           </div>
           <p class="result-card-spec">${esc(spec)}</p>
+          <div class="result-card-complement"><strong>Complementação da especificação</strong>${complementHtml(complemento, itemId)}</div>
           <p class="result-card-material">${esc(materialLabel)}</p>
         </div>
         <details>
@@ -1109,7 +1219,7 @@
             <dt>Atualiza\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataAtualizacao)) || "\u2014"}</dd>
             <dt>Vers\u00e3o</dt><dd>${esc(versao) || "\u2014"}</dd>
             <dt>Cria\u00e7\u00e3o</dt><dd>${esc(formatDateTime(dataCriacao)) || "\u2014"}</dd>
-            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
+            ${HISTORY_ENABLED ? `<dt>Hist\u00f3rico</dt><dd><a href="history.html?item_id=${encodeURIComponent(itemId)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist\u00f3rico</a></dd>` : ""}
           </dl>
         </details>
       `;
@@ -1124,6 +1234,8 @@
     const dataQ = buildQuery(false);
     const rows = db.exec(dataQ.sql, dataQ.params);
     const data = rows.length ? rows[0].values : [];
+    complementValues.clear();
+    for (const row of data) complementValues.set(String(row[10]), { codigo: row[0], tipo: row[11], text: row[16] || "" });
 
     const currentPageSize = pageSize();
     const start = total > 0 ? page * currentPageSize + 1 : 0;
@@ -1135,7 +1247,7 @@
     nextBtn.disabled = end >= total;
 
     tbody.innerHTML = "";
-    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao] of data) {
+    for (const [codigo, spec, situacao, natureza, elementos_codigos, linhas_fornec, mat_codigo, mat_nome, classe, grupo, item_id, tipo, servico_id, data_ultima_atualizacao, versao, data_criacao, complemento] of data) {
       const detailUrl = tipo === "SERVICO"
         ? `https://www1.compras.mg.gov.br/catalogo/consultaItensServicoCadastrados/relatorioItemServico.html?id=${esc(item_id)}`
         : `https://www1.compras.mg.gov.br/catalogo/consultaItensMaterialCadastrados/relatorioItemMaterial.html?id=${esc(item_id)}`;
@@ -1144,6 +1256,7 @@
       tr.innerHTML = `
         <td class="col-codigo"><a href="${detailUrl}" target="_blank" rel="noopener" class="codigo-link">${esc(codigo)} <svg class="icon-external" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/></svg></a></td>
         <td class="spec col-spec">${esc(spec)}</td>
+        <td class="col-complemento">${complementHtml(complemento, item_id)}</td>
         <td class="col-situacao">${esc(situacao)}</td>
         <td class="col-natureza">${esc(natureza)}</td>
         <td class="col-elementos-codigos">${esc(elementos_codigos)}</td>
@@ -1154,7 +1267,7 @@
         <td class="col-data-atualizacao">${esc(formatDateTime(data_ultima_atualizacao))}</td>
         <td class="col-versao">${esc(versao)}</td>
         <td class="col-data-criacao">${esc(formatDateTime(data_criacao))}</td>
-        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
+        ${HISTORY_ENABLED ? `<td class="col-historico"><a href="history.html?item_id=${encodeURIComponent(item_id)}&v=${HISTORY_PAGE_VERSION}&ciclo=${publication.cycle_id}&origem=historico${HISTORY_EVALUATION ? "&avaliacao=escopos-v1" : ""}" class="history-link">Ver hist&oacute;rico</a></td>` : ""}
       `;
       tbody.appendChild(tr);
     }
@@ -1353,6 +1466,7 @@
   const columns = [
     { key: "codigo", label: "Codigo", cls: "col-codigo" },
     { key: "spec", label: "Especificacao do item", cls: "col-spec" },
+    { key: "complemento", label: "Complementação da especificação", cls: "col-complemento" },
     { key: "situacao", label: "Situacao", cls: "col-situacao" },
     { key: "natureza", label: "Natureza de Despesa", cls: "col-natureza" },
     { key: "elementos_codigos", label: "Elemento-Item", cls: "col-elementos-codigos" },
@@ -1486,3 +1600,4 @@
 </script>
 </body>
 </html>
+
