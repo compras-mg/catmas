@@ -65,6 +65,7 @@ def main():
             id,
             materialOuServico_id
         FROM items
+        WHERE LOWER(TRIM(COALESCE(situacao_descricao, ''))) <> 'inativo'
     """).fetchall()
 
     # Convert grupo/classe to short codes
@@ -94,6 +95,7 @@ def main():
             materialOuServico_classe_codigoGrupoFormatado,
             materialOuServico_classe_codigoNomeFormatado
         FROM items
+        WHERE LOWER(TRIM(COALESCE(situacao_descricao, ''))) <> 'inativo'
         ORDER BY 1, 2, 3
     """).fetchall()
 
