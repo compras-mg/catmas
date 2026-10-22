@@ -106,8 +106,10 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
   }
+  .pagination > div { display: flex; align-items: center; gap: 0.3rem; }
   .pagination .info { font-size: 0.9rem; color: #3c3c3b; }
   .pagination button {
+    height: 36px; display: inline-flex; align-items: center; justify-content: center;
     padding: 0.4rem 1rem; border: 1px solid #ccc; border-radius: 3px;
     background: #fff; cursor: pointer; font-size: 0.9rem;
   }
@@ -339,7 +341,6 @@
         <ul id="filter-situacao" class="admin-filter">
           <li class="active" data-value="">Todos</li>
           <li data-value="Ativo">Ativo</li>
-          <li data-value="Inativo">Inativo</li>
           <li data-value="Suspenso para compra">Suspenso para compra</li>
         </ul>
       </div>
@@ -926,7 +927,8 @@
   // Build WHERE clause, optionally excluding one facet
   function buildWhere(exclude) {
     const f = getFilters();
-    const clauses = [];
+    // Regra do buscador: inativos ficam fora dos resultados e de todas as facetas.
+    const clauses = ["LOWER(TRIM(COALESCE(situacao, ''))) <> 'inativo'"];
     const params = {};
 
     if (exclude !== "tipo" && f.tipo)
