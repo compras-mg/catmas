@@ -180,9 +180,26 @@
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
   tr:hover td { background: #f8f9fa; }
   th.col-complemento, td.col-complemento { width: 280px; max-width: 280px; }
-  .complement-preview { width: 260px; max-width: 100%; }
-  .complement-snippet { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.4; max-height: 2.8em; margin: 0 0 .35rem; }
-  .complement-open { color: #245f51; background: none; border: 0; text-decoration: underline; cursor: pointer; padding: .2rem 0; font: inherit; }
+  .complement-preview { position: relative; width: 260px; max-width: 100%; overflow: hidden; }
+  td.col-complemento { position: relative; }
+  td.col-complemento .complement-preview {
+    position: absolute; inset: 0.55rem 0.75rem; width: auto; max-width: none;
+  }
+  .complement-snippet {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+    overflow: hidden; overflow-wrap: anywhere; line-height: 1.4;
+    max-height: 4.2em; margin: 0;
+  }
+  .complement-open {
+    position: absolute; right: 0; bottom: 0; max-width: 100%;
+    color: #245f51; background: #fff; box-shadow: -8px 0 6px #fff;
+    border: 0; text-decoration: underline; cursor: pointer;
+    padding: 0 0 0 .4rem; font: inherit; font-size: .78rem; line-height: 1.4;
+    white-space: nowrap;
+  }
+  .complement-open[hidden] { display: none; }
+  tr:hover td .complement-open { background: #f8f9fa; box-shadow: -8px 0 6px #f8f9fa; }
+  .complement-open:focus-visible { outline: 2px solid #245f51; outline-offset: -2px; }
   .complement-dialog { position: fixed; inset: 0 0 0 auto; margin: 0; box-sizing: border-box; width: min(560px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; padding: 1.5rem; overflow-y: auto; box-shadow: -8px 0 30px #0003; }
   .complement-dialog::backdrop { background: #0006; }
   .complement-dialog header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
@@ -576,11 +593,11 @@
     document.getElementById("spec").placeholder = "Buscar por código ou especificação...";
   }
   const complementValues = new Map();
-  function complementSnippet(value, search) {
+  function complementSnippet(value, search, focusMatch = false) {
     const text = String(value || "").replace(/\s+/g, " ").trim();
     const fold = value => value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
     const terms = [...new Set(fold(search || "").match(/[\p{L}\p{N}]+/gu) || [])];
-    if (!terms.length) return "";
+    if (!terms.length) return esc(text);
     // Map normalized offsets back to the original text, including decomposed accents.
     let normalized = "", positions = [];
     for (let i = 0; i < text.length;) {
@@ -594,9 +611,9 @@
     const hits = [...normalized.matchAll(/[\p{L}\p{N}]+/gu)]
       .filter(match => terms.includes(match[0]))
       .map(match => [positions[match.index], positions[match.index + match[0].length]]);
-    if (!hits.length) return "";
-    const start = Math.max(0, hits[0][0] - 45);
-    const end = Math.min(text.length, Math.max(start + 160, hits[0][1]));
+    if (!hits.length) return esc(text);
+    const start = focusMatch ? Math.max(0, hits[0][0] - 45) : 0;
+    const end = text.length;
     let result = start ? "…" : "", cursor = start;
     for (const [from, to] of hits) {
       if (from >= end) break;
@@ -610,8 +627,37 @@
     if (!hasComplement) return '<span>Indisponível nesta carga</span>';
     if (!value || !value.trim()) return '<span>Sem complemento</span>';
     const snippet = complementSnippet(value, specIn.value.trim());
-    return `<div class="complement-preview">${snippet ? `<p class="complement-snippet">${snippet}</p>` : ""}
-      <button type="button" class="complement-open" data-complement-id="${esc(itemId)}">Ver complemento</button></div>`;
+    return `<div class="complement-preview" data-complement-preview-id="${esc(itemId)}"><p class="complement-snippet">${snippet}</p>
+      <button type="button" class="complement-open" data-complement-id="${esc(itemId)}" aria-label="Expandir complemento do item ${esc(itemId)}" hidden>… Ver mais</button></div>`;
+  }
+  // Complementos ficam fora do fluxo da tabela: a altura vem das outras celulas.
+  let complementLayoutFrame = 0;
+  function scheduleComplementLayout() {
+    if (complementLayoutFrame) return;
+    complementLayoutFrame = requestAnimationFrame(() => {
+      complementLayoutFrame = 0;
+      document.querySelectorAll(".complement-preview").forEach(preview => {
+        if (!preview.getClientRects().length) return;
+        const snippet = preview.querySelector(".complement-snippet");
+        const button = preview.querySelector(".complement-open");
+        const value = complementValues.get(preview.dataset.complementPreviewId)?.text || "";
+        const search = specIn.value.trim();
+        snippet.innerHTML = complementSnippet(value, search);
+        button.hidden = true;
+        const lineHeight = parseFloat(getComputedStyle(snippet).lineHeight);
+        const isTableCell = !!preview.closest("td.col-complemento");
+        const available = isTableCell ? preview.clientHeight : lineHeight * 3;
+        const lines = Math.max(1, Math.floor((available + 0.5) / lineHeight));
+        snippet.style.webkitLineClamp = String(lines);
+        snippet.style.maxHeight = Math.max(0, Math.min(available, lines * lineHeight)) + "px";
+        // O botao ocupa o final da ultima linha, sem aumentar a altura da linha.
+        button.style.bottom = Math.max(0, available - Math.min(available, lines * lineHeight)) + "px";
+        const clipped = snippet.scrollHeight > snippet.clientHeight + 1 ||
+          snippet.scrollWidth > snippet.clientWidth + 1;
+        if (clipped && search) snippet.innerHTML = complementSnippet(value, search, true);
+        button.hidden = !clipped;
+      });
+    });
   }
   const complementDialog = document.getElementById("complement-dialog");
   document.getElementById("complement-close").addEventListener("click", () => complementDialog.close());
@@ -1278,6 +1324,8 @@
       tbody.appendChild(tr);
     }
     renderMobileCards(data);
+    applyHiddenCols(loadHiddenCols());
+    scheduleComplementLayout();
 
     // Highlight search terms in all FTS-indexed columns
     const specTerm = specIn.value.trim();
@@ -1505,6 +1553,7 @@
         else el.classList.remove("col-hidden");
       });
     }
+    scheduleComplementLayout();
   }
 
   function renderColsPanel() {
@@ -1612,6 +1661,15 @@
     resizingSidebar = false;
     document.body.style.userSelect = "";
   });
+
+  // Recalcular ao redimensionar a janela, o menu lateral ou as colunas visiveis.
+  window.addEventListener("resize", scheduleComplementLayout);
+  if (typeof ResizeObserver !== "undefined") {
+    const complementObserver = new ResizeObserver(scheduleComplementLayout);
+    complementObserver.observe(tbody.closest("table"));
+    complementObserver.observe(resultsCards);
+  }
+  document.fonts?.ready.then(scheduleComplementLayout);
 
   // Initial render
   renderColsPanel();
