@@ -9,8 +9,10 @@ continua separado e segue a mesma regra anterior. Arquivos anexos de
 especificacao longa nao sao baixados nem indexados por esta alteracao.
 
 A pagina exibe uma coluna Complementacao da especificacao, disponivel no
-seletor de colunas, e o mesmo texto nos resultados em celular. O texto pode
-ser expandido e vem aberto quando ha uma busca. HTML armazenado na base e
+seletor de colunas, e o mesmo texto nos resultados em celular. A tabela mostra no maximo duas linhas do trecho encontrado, com o termo
+destacado. Sem correspondencia no complemento, aparece apenas Ver complemento.
+O texto completo abre em painel lateral modal, fechavel por botao, Escape ou
+clique fora, sem expandir a linha da tabela. HTML armazenado na base e
 exibido como texto, sem execucao. Cargas antigas continuam funcionando com
 aviso de que ainda nao contem complementos; ausencia da coluna nao e
 confundida com um campo vazio no cadastro.
