@@ -81,7 +81,8 @@ def main():
             data_criacao        TEXT NOT NULL,
             data_ultima_atualizacao TEXT NOT NULL,
             item_id             INTEGER NOT NULL,
-            servico_id          INTEGER
+            servico_id          INTEGER,
+            complementacao_especificacao TEXT NOT NULL
         )
     """)
 
@@ -127,14 +128,14 @@ def main():
          agri_fam or "false", sust or "false", normalize_bool(ok_registro_precos),
          has_long_specification(complementacao_especificacao),
          versao, data_criacao or "", data_ultima_atualizacao or "",
-         item_id, servico_id)
+         item_id, servico_id, complementacao_especificacao or "")
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
             mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, complementacao_especificacao,
             versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
 
-    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
+    dst.executemany("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", slim_rows)
 
     # Hierarchy table: full labels for dropdowns
     dst.execute("""
@@ -168,20 +169,20 @@ def main():
     # FTS5 full-text search index on code, spec, material name, grupo label, classe label
     dst.execute("""
         CREATE VIRTUAL TABLE items_fts USING fts5(
-            codigo, spec, material_nome, grupo_label, classe_label,
+            codigo, spec, material_nome, grupo_label, classe_label, complementacao_especificacao,
             tokenize='unicode61 remove_diacritics 2'
         )
     """)
 
     fts_rows = [
-        (codigo or "", spec or "", mat_nome or "", grupo or "", classe or "")
+        (codigo or "", spec or "", mat_nome or "", grupo or "", classe or "", complementacao_especificacao or "")
         for tipo, grupo, classe, codigo, spec, situacao, natureza, linhas_fornec, elementos_codigos,
             mat_codigo, mat_nome, agri_fam, sust, ok_registro_precos, complementacao_especificacao,
             versao, data_criacao, data_ultima_atualizacao,
             item_id, servico_id in rows
     ]
     dst.executemany(
-        "INSERT INTO items_fts(codigo, spec, material_nome, grupo_label, classe_label) VALUES (?,?,?,?,?)",
+        "INSERT INTO items_fts(codigo, spec, material_nome, grupo_label, classe_label, complementacao_especificacao) VALUES (?,?,?,?,?,?)",
         fts_rows,
     )
 
@@ -203,3 +204,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
